@@ -181,13 +181,6 @@ def fill_pdf_with_overlay(pdf_bytes: bytes, pages_data: list) -> bytes:
     except Exception:
         pass
 
-    # --- Try AcroForm fill (best-effort) ---
-    acro_fields = {}
-    try:
-        acro_fields = detect_pdf_fields(pdf_bytes)
-    except Exception:
-        pass
-
     # --- Open original PDF with fitz to get page sizes ---
     doc = fitz.open(stream=pdf_bytes, filetype="pdf")
     num_template_pages = len(doc)

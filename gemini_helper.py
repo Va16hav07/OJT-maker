@@ -26,7 +26,13 @@ def split_work_into_days(api_key: str, work_description: str, dates: list, num_d
     text = response.text.strip()
     text = re.sub(r'^```(?:json)?\s*', '', text)
     text = re.sub(r'\s*```$', '', text)
-    daily_splits = json.loads(text)
+    try:
+        daily_splits = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            f"Failed to parse Gemini response as JSON. "
+            f"Please try again or verify your API key. Details: {exc}"
+        ) from exc
 
     result = []
     for i, item in enumerate(daily_splits[:num_days]):
@@ -63,4 +69,10 @@ Keep it concise, professional, realistic, and non-repetitive."""
     text = response.text.strip()
     text = re.sub(r'^```(?:json)?\s*', '', text)
     text = re.sub(r'\s*```$', '', text)
-    return json.loads(text)
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ValueError(
+            f"Failed to parse Gemini journal response as JSON. "
+            f"Please try again or verify your API key. Details: {exc}"
+        ) from exc

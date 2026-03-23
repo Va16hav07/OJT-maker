@@ -4,6 +4,7 @@ import uuid
 import threading
 import tempfile
 import traceback
+import time
 from datetime import datetime, timedelta
 
 from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks
@@ -29,6 +30,24 @@ app.add_middleware(
 # In-memory task storage
 tasks: dict = {}
 task_files: dict = {}  # task_id -> temp file path
+task_timestamps: dict = {}  # task_id -> creation time (for cleanup)
+
+TASK_TTL_SECONDS = 3600  # Clean up tasks older than 1 hour
+
+
+def cleanup_old_tasks():
+    """Remove tasks and temp files older than TASK_TTL_SECONDS."""
+    now = time.time()
+    stale = [tid for tid, ts in list(task_timestamps.items()) if now - ts > TASK_TTL_SECONDS]
+    for tid in stale:
+        path = task_files.pop(tid, None)
+        if path and os.path.exists(path):
+            try:
+                os.unlink(path)
+            except OSError:
+                pass
+        tasks.pop(tid, None)
+        task_timestamps.pop(tid, None)
 
 
 # ---------------------------------------------------------------------------
@@ -153,6 +172,9 @@ async def upload(
     work_description: str = Form(...),
     api_key: str = Form(...),
 ):
+    # Opportunistically clean up old tasks on each upload
+    cleanup_old_tasks()
+
     try:
         # Parse dates
         start_dt = parse_date(start_date)
@@ -193,6 +215,7 @@ async def upload(
             "current_page": 0,
             "message": "Ready to generate.",
         }
+        task_timestamps[task_id] = time.time()
 
         return {
             "task_id": task_id,
