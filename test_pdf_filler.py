@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Test script to verify PDF filler functionality.
-Fills abc.pdf with test data for all fields and saves output as abc_filled.pdf
+Fills ojt_template.pdf with test data for all fields and saves output as abc_filled.pdf
 """
 
 import os
@@ -10,8 +10,8 @@ from pdf_filler import fill_pdf_with_overlay
 def test_pdf_filler():
     """Test filling PDF with sample data for all fields."""
     
-    # Check if abc.pdf exists
-    pdf_path = "abc.pdf"
+    # Check if ojt_template.pdf exists
+    pdf_path = "ojt_template.pdf"
     if not os.path.exists(pdf_path):
         print(f"❌ Error: {pdf_path} not found in current directory")
         return False
