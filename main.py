@@ -346,7 +346,7 @@ async def root():
 @app.get("/download-template")
 async def download_template():
     """Download the template PDF if it exists."""
-    template_path = "abc.pdf"
+    template_path = "ojt_template.pdf"
     if os.path.exists(template_path):
         return FileResponse(
             path=template_path,
@@ -356,7 +356,7 @@ async def download_template():
     else:
         return JSONResponse(
             status_code=404,
-            content={"error": "Template PDF not available. Please upload abc.pdf to the deployment or use your own PDF template."}
+            content={"error": "Template PDF not available. Please upload ojt_template.pdf to the deployment or use your own PDF template."}
         )
 
 
