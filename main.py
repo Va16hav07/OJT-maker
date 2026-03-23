@@ -14,7 +14,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dateutil.parser import parse as parse_date
-import fitz  # PyMuPDF
+import PyPDF2
 
 from gemini_helper import split_work_into_days, generate_journal_entry, generate_all_journals
 from pdf_filler import fill_pdf_with_overlay
@@ -216,10 +216,12 @@ async def upload(
         # Read PDF
         pdf_bytes = await pdf_file.read()
 
-        # Get page count
-        doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-        page_count = len(doc)
-        doc.close()
+        # Get page count using PyPDF2
+        try:
+            reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes))
+            page_count = len(reader.pages)
+        except Exception as e:
+            return JSONResponse(status_code=400, content={"error": "Invalid PDF file: " + str(e)})
 
         # Validate N <= PDF page count
         if num_days > page_count:

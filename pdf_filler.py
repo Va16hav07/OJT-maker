@@ -1,11 +1,10 @@
 import io
-import fitz  # PyMuPDF
+import json
+import re
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import simpleSplit
 import PyPDF2
-import re
-import json
 
 A4_WIDTH, A4_HEIGHT = A4  # 595.27, 841.89 pts
 
@@ -114,39 +113,10 @@ def detect_pdf_fields(pdf_bytes: bytes) -> dict:
 
 def detect_field_positions_from_text(pdf_bytes: bytes) -> dict:
     """
-    Scan PDF text for known field labels and return their approximate bounding boxes.
-    Returns {field_key: {"page": int, "x": float, "y": float}} where y is from bottom.
+    Stub function - field detection not needed on Vercel.
+    Returns empty dict to use hardcoded coordinates.
     """
-    positions = {}
-    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    try:
-        for page_num in range(len(doc)):
-            page = doc[page_num]
-            page_h = page.rect.height
-            blocks = page.get_text("dict")["blocks"]
-            for block in blocks:
-                if block.get("type") != 0:
-                    continue
-                for line in block.get("lines", []):
-                    for span in line.get("spans", []):
-                        text_lower = span["text"].strip().lower()
-                        bbox = span["bbox"]  # (x0, y0, x1, y1) from top-left
-                        for field_key, patterns in LABEL_PATTERNS.items():
-                            if field_key in positions:
-                                continue
-                            for pat in patterns:
-                                if text_lower.startswith(pat) or text_lower == pat.rstrip(":"):
-                                    # Convert y from top-left to bottom-left origin
-                                    y_bottom = page_h - bbox[3]
-                                    positions[field_key] = {
-                                        "page": page_num,
-                                        "x": bbox[2] + 4,   # just right of the label
-                                        "y": y_bottom,
-                                    }
-                                    break
-    finally:
-        doc.close()
-    return positions
+    return {}
 
 
 def _wrap_text(text: str, font_name: str, font_size: float, max_width: float) -> list:
@@ -227,9 +197,8 @@ def fill_pdf_with_overlay(pdf_bytes: bytes, pages_data: list) -> bytes:
     Fill the PDF template with journal data.
 
     Strategy:
-    1. Try AcroForm field filling first.
-    2. Fall back to scanning text labels for field positions.
-    3. Fall back to hardcoded A4 coordinates.
+    1. Fall back to scanning text labels for field positions.
+    2. Fall back to hardcoded A4 coordinates.
     Always uses reportlab overlay merged with PyPDF2.
 
     Args:
@@ -248,14 +217,22 @@ def fill_pdf_with_overlay(pdf_bytes: bytes, pages_data: list) -> bytes:
     except Exception:
         pass
 
-    # --- Open original PDF with fitz to get page sizes ---
-    doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-    num_template_pages = len(doc)
+    # --- Get page count and sizes using PyPDF2 ---
+    original_reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes))
+    num_template_pages = len(original_reader.pages)
+    
+    # Get page sizes - use A4 as default
     page_sizes = []
     for i in range(num_template_pages):
-        r = doc[i].rect
-        page_sizes.append((r.width, r.height))
-    doc.close()
+        try:
+            page = original_reader.pages[i]
+            # Get page mediabox dimensions
+            mediabox = page.mediabox
+            width = float(mediabox.width)
+            height = float(mediabox.height)
+            page_sizes.append((width, height))
+        except Exception:
+            page_sizes.append((A4_WIDTH, A4_HEIGHT))
 
     # Number of output pages = max(template pages, data pages)
     num_output_pages = max(num_template_pages, len(pages_data))
@@ -288,7 +265,6 @@ def fill_pdf_with_overlay(pdf_bytes: bytes, pages_data: list) -> bytes:
     overlay_buffer.seek(0)
 
     # --- Merge overlay with original PDF using PyPDF2 ---
-    original_reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes))
     overlay_reader = PyPDF2.PdfReader(overlay_buffer)
     writer = PyPDF2.PdfWriter()
 
