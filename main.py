@@ -1,5 +1,6 @@
 import io
 import os
+import sys
 import uuid
 import threading
 import tempfile
@@ -17,6 +18,10 @@ import fitz  # PyMuPDF
 
 from gemini_helper import split_work_into_days, generate_journal_entry, generate_all_journals
 from pdf_filler import fill_pdf_with_overlay
+
+# Set temp directory for Vercel
+if 'VERCEL' in os.environ:
+    tempfile.tempdir = '/tmp'
 
 app = FastAPI(title="OJT Journal Maker")
 
@@ -337,7 +342,7 @@ async def download_template():
     else:
         return JSONResponse(
             status_code=404,
-            content={"error": "Template PDF not found. Please upload abc.pdf to the project root."}
+            content={"error": "Template PDF not available. Please upload abc.pdf to the deployment or use your own PDF template."}
         )
 
 
