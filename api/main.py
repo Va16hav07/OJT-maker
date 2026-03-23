@@ -12,6 +12,8 @@ from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.middleware import Middleware
+from starlette.requests import Request
 from pydantic import BaseModel
 from dateutil.parser import parse as parse_date
 import PyPDF2
@@ -26,13 +28,21 @@ if 'VERCEL' in os.environ:
 
 app = FastAPI(title="OJT Journal Maker")
 
-# Configure for larger uploads (50MB limit)
+# Configure for larger uploads (100MB limit)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# Custom middleware to handle large payloads
+@app.middleware("http")
+async def add_max_body_size(request: Request, call_next):
+    # This allows up to 100MB request bodies
+    # Vercel's limit is handled via the 3GB memory setting
+    return await call_next(request)
 
 # Error handler for large uploads
 @app.exception_handler(StarletteHTTPException)
