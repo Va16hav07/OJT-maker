@@ -14,11 +14,11 @@ FIELD_COORDS = {
     "ojt_timing_end":       {"x": 480, "y": 748, "max_width": 80, "font_size": 10},
     "department":           {"x": 150, "y": 718, "max_width": 150, "font_size": 10},
     "designation":          {"x": 404, "y": 718, "max_width": 150, "font_size": 10},
-    "my_space":             {"x": 50,  "y": 650, "max_width": 490, "font_size": 9, "max_lines": 4},
-    "tasks_carried_out":    {"x": 50,  "y": 460, "max_width": 490, "font_size": 9, "max_lines": 6},
-    "key_learnings":        {"x": 50,  "y": 300, "max_width": 490, "font_size": 9, "max_lines": 5},
-    "tools_used":           {"x": 53,  "y": 170, "max_width": 280, "font_size": 9, "max_lines": 4},
-    "special_achievements": {"x": 320,  "y": 170, "max_width": 240, "font_size": 9, "max_lines": 3},
+    "my_space":             {"x": 50,  "y": 650, "max_width": 490, "font_size": 11, "max_lines": 4},
+    "tasks_carried_out":    {"x": 50,  "y": 460, "max_width": 490, "font_size": 11, "max_lines": 6},
+    "key_learnings":        {"x": 50,  "y": 300, "max_width": 490, "font_size": 11, "max_lines": 5},
+    "tools_used":           {"x": 53,  "y": 170, "max_width": 280, "font_size": 11, "max_lines": 4},
+    "special_achievements": {"x": 320,  "y": 170, "max_width": 240, "font_size": 11, "max_lines": 3},
 }
 
 # Human-readable label patterns that map to field keys
