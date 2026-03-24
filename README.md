@@ -18,39 +18,67 @@ A **Daily Activity Journal PDF Auto-Filler** powered by Google Gemini AI. Upload
 ## 🗂 File Structure
 
 ```
-OJT-maker/
+OJT-Pranjal/
 ├── main.py             # FastAPI backend (API endpoints + background task)
 ├── gemini_helper.py    # Google Gemini API integration
-├── pdf_filler.py       # PDF overlay filling (PyMuPDF + ReportLab + PyPDF2)
+├── pdf_filler.py       # PDF overlay filling (ReportLab + PyPDF2)
 ├── requirements.txt    # Python dependencies
 ├── static/
-│   └── index.html      # Single-page frontend (vanilla HTML/CSS/JS)
+│   └── index.html      # Single-page frontend (vanilla HTML5/CSS3/JS)
 └── README.md
 ```
 
 ---
 
-## ⚙️ Setup
+## ⚙️ Setup & Installation
 
-### 1. Install Dependencies
+### Prerequisites
+- **Python 3.8 or higher** installed on your system.
+- **Git** (optional, for cloning the repository).
 
+### 1. Clone the Repository
+```bash
+git clone https://github.com/Va16hav07/OJT-maker.git
+cd OJT-maker
+```
+
+### 2. Create and Activate Virtual Environment
+
+#### 🐧 Linux & 🍎 macOS
+```bash
+# Create venv
+python3 -m venv venv
+
+# Activate venv
+source venv/bin/activate
+```
+
+#### 🪟 Windows
+```bash
+# Create venv
+python -m venv venv
+
+# Activate venv
+venv\Scripts\activate
+```
+
+### 3. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Get a Gemini API Key
+### 4. Configure Environment Variables (Optional)
+You can either paste your API key directly into the application UI or set it in a `.env` file:
+1. Copy `.env.example` to `.env`:
+   - **Linux/macOS:** `cp .env.example .env`
+   - **Windows:** `copy .env.example .env`
+2. Open `.env` and add your **GEMINI_API_KEY**.
+   - Get your key from [Google AI Studio](https://aistudio.google.com/app/apikey).
 
-1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey).
-2. Sign in with your Google account.
-3. Click **Create API Key**.
-4. Copy the key – you'll paste it into the app's form.
-
-### 3. Run the Server
-
+### 5. Run the Server
 ```bash
 uvicorn main:app --reload
 ```
-
 The app will be available at **http://localhost:8000**.
 
 ---
@@ -59,7 +87,8 @@ The app will be available at **http://localhost:8000**.
 
 ### Step 1 – Upload & Configure
 1. Open **http://localhost:8000** in your browser.
-2. Drag-and-drop (or click to upload) your OJT journal **PDF template**.
+2. Drag-and-drop (or click to upload) your OJT journal **PDF template**. 
+   - *Note: You can download the default template `ojt_template.pdf` from the "Start Over" screen if needed.*
 3. Fill in:
    - **Start Date / End Date** – your internship period.
    - **Skip Dates** *(optional)* – holidays or leave days, comma-separated (e.g. `2024-12-25, 2025-01-01`).
@@ -86,16 +115,16 @@ The app will be available at **http://localhost:8000**.
 
 | Layer     | Technology |
 |-----------|-----------|
-| Backend   | FastAPI, Uvicorn |
-| AI        | Google Gemini 1.5 Flash (`google-generativeai`) |
-| PDF Read  | PyMuPDF (`fitz`) |
-| PDF Write | ReportLab + PyPDF2 |
-| Frontend  | Vanilla HTML / CSS / JavaScript |
+| **Backend**   | FastAPI, Uvicorn |
+| **AI**        | Google Gemini 1.5 Flash (`google-generativeai`) |
+| **PDF Processing** | ReportLab (drawing) + PyPDF2 (merging/reading) |
+| **Frontend**  | Vanilla HTML5 / CSS3 / JavaScript |
 
 ---
 
 ## 📝 Notes
 
-- The app fills PDFs using a **text overlay** strategy. It first tries to detect field labels in the PDF, then falls back to hardcoded A4 coordinate positions.
-- If the PDF template has more pages than working days, the last journal entry is repeated.
+- The app fills PDFs using a **text overlay** strategy. It first tries to detect field labels in the PDF using AcroForm metadata, then falls back to hardcoded A4 coordinate positions.
+- If the PDF template has more pages than working days, the extra pages are left blank.
+- The date range must have at least as many pages in the PDF as there are working days.
 - All processing is done locally except for the Gemini API calls.
