@@ -14,11 +14,11 @@ FIELD_COORDS = {
     "ojt_timing_end":       {"x": 480, "y": 748, "max_width": 80, "font_size": 10},
     "department":           {"x": 150, "y": 718, "max_width": 150, "font_size": 10},
     "designation":          {"x": 404, "y": 718, "max_width": 150, "font_size": 10},
-    "my_space":             {"x": 50,  "y": 650, "max_width": 490, "font_size": 11, "max_lines": 4},
-    "tasks_carried_out":    {"x": 50,  "y": 460, "max_width": 490, "font_size": 11, "max_lines": 6},
-    "key_learnings":        {"x": 50,  "y": 300, "max_width": 490, "font_size": 11, "max_lines": 4},
-    "tools_used":           {"x": 53,  "y": 170, "max_width": 260, "font_size": 11, "max_lines": 4},
-    "special_achievements": {"x": 320,  "y": 170, "max_width": 240, "font_size": 11, "max_lines": 3},
+    "my_space":             {"x": 50,  "y": 650, "max_width": 490, "font_size": 9, "max_lines": 4},
+    "tasks_carried_out":    {"x": 50,  "y": 460, "max_width": 490, "font_size": 9, "max_lines": 6},
+    "key_learnings":        {"x": 50,  "y": 300, "max_width": 490, "font_size": 9, "max_lines": 5},
+    "tools_used":           {"x": 53,  "y": 170, "max_width": 280, "font_size": 9, "max_lines": 4},
+    "special_achievements": {"x": 320,  "y": 170, "max_width": 240, "font_size": 9, "max_lines": 3},
 }
 
 # Human-readable label patterns that map to field keys
@@ -55,11 +55,13 @@ def clean_text_field(text: str) -> str:
         except (json.JSONDecodeError, ValueError):
             pass
     
-    # If it contains multiple lines, keep them as is
+    # If it contains bullet points or dashes, clean them up
     lines = text.split('\n')
     cleaned_lines = []
     for line in lines:
         line = line.strip()
+        # Remove leading bullet characters
+        line = re.sub(r'^[\-•*]\s*', '', line)
         if line:
             cleaned_lines.append(line)
     

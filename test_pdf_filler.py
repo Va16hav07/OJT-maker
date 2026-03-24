@@ -25,29 +25,16 @@ def test_pdf_filler():
     
     # Create test data for all fields
     test_data = [
-        # Page 1: Standard data with bullet points (new feature)
         {
             "date": "23-3-2026",
             "ojt_timing": "3:30 PM – 6:30 PM",
-            "department": "Engineering",
-            "designation": "Software Intern",
-            "my_space": "One short sentence for reflection.",
-            "tasks_carried_out": "• Task 1: Implemented UI\n• Task 2: Fixed bugs\n• Task 3: Wrote tests",
-            "key_learnings": "• Learned React hooks\n• Improved Git workflow\n• Understood PDF generation",
-            "tools_used": "Python, React, Git, VS Code",
-            "special_achievements": "Completed all tasks today.",
-        },
-        # Page 2: Long text to test truncation (max_lines)
-        {
-            "date": "24-3-2026",
-            "ojt_timing": "9:00 AM – 5:00 PM",
-            "department": "Engineering",
-            "designation": "Software Intern",
-            "my_space": "This is a very long reflection that might exceed the four lines limit if it was even longer than this, but we want to see how it handles standard text wrapping at the new font size of 11.",
-            "tasks_carried_out": "• Line 1\n• Line 2\n• Line 3\n• Line 4\n• Line 5\n• Line 6\n• Line 7 (this should be truncated as max_lines is 6)",
-            "key_learnings": "• Learning 1\n• Learning 2\n• Learning 3\n• Learning 4\n• Learning 5 (this should be truncated as max_lines is 4)",
-            "tools_used": "Very Long Tool Name 1, Very Long Tool Name 2, Very Long Tool Name 3, Very Long Tool Name 4 (testing width)",
-            "special_achievements": "This is a very long achievement description to test if it wraps correctly within its 240 width boundary at font size 11.",
+            "department": "IT Department",
+            "designation": "Junior Developer",
+            "my_space": "This is my reflection on the OJT experience. I learned valuable skills and gained practical knowledge in real-world scenarios.",
+            "tasks_carried_out": "Developed web applications, debugged code, participated in team meetings, wrote unit tests, reviewed code from peers, and assisted in deployment processes.",
+            "key_learnings": "Learned modern web development practices, improved problem-solving skills, understood agile methodology, enhanced collaboration abilities, and gained insights into software architecture.",
+            "tools_used": "VS Code, Git, Python, JavaScript, React, PostgreSQL, Docker",
+            "special_achievements": "Successfully completed 2 projects ahead of schedule and received positive feedback from mentors.",
         }
     ]
     
