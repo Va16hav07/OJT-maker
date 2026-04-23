@@ -207,7 +207,7 @@ def _build_overlay_page(c_canvas, page_data: dict, page_width: float, page_heigh
                 c_canvas.drawString(x, y - i * line_height, line)
 
 
-def fill_pdf_with_overlay(pdf_bytes: bytes, pages_data: list, user_details=None) -> bytes:
+def fill_pdf_with_overlay(pdf_bytes: bytes, pages_data: list, user_details=None, journal_start_page: int = 8, journal_end_page: int = None) -> bytes:
     """
     Fill the PDF template with journal data.
 
@@ -250,8 +250,15 @@ def fill_pdf_with_overlay(pdf_bytes: bytes, pages_data: list, user_details=None)
         except Exception:
             page_sizes.append((A4_WIDTH, A4_HEIGHT))
 
-    # Number of output pages = max(template pages, len(pages_data) + 7) because journals start on page index 7
-    num_output_pages = max(num_template_pages, len(pages_data) + 7)
+    # Handle dynamic journal page offsets
+    journal_start_idx = max(0, journal_start_page - 1)
+    
+    if journal_end_page is not None:
+        max_journal_pages = max(0, journal_end_page - journal_start_page + 1)
+        pages_data = pages_data[:max_journal_pages]
+
+    # Number of output pages = max(template pages, len(pages_data) + journal_start_idx)
+    num_output_pages = max(num_template_pages, len(pages_data) + journal_start_idx)
 
     # --- Build overlay PDF with reportlab ---
     overlay_buffer = io.BytesIO()
@@ -271,8 +278,8 @@ def fill_pdf_with_overlay(pdf_bytes: bytes, pages_data: list, user_details=None)
         if page_idx == 2 and user_details:
             page_data.update(user_details)
             
-        if page_idx >= 7:
-            journal_idx = page_idx - 7
+        if page_idx >= journal_start_idx:
+            journal_idx = page_idx - journal_start_idx
             if journal_idx < len(pages_data):
                 page_data.update(pages_data[journal_idx])
 

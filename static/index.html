@@ -392,7 +392,7 @@
       </div>
 
       <div class="full" style="margin-top: 10px;">
-        <h3 style="font-size: 0.95rem; margin-bottom: 8px;">Trainee Details (Page 3)</h3>
+        <h3 style="font-size: 0.95rem; margin-bottom: 8px;">Trainee Details (Page 3) <span style="color:var(--muted);font-weight:400;font-size:0.85rem;">(optional)</span></h3>
       </div>
       <div>
         <label for="name">Name</label>
@@ -429,6 +429,28 @@
 
       <div class="full" style="margin-top: 10px;">
         <h3 style="font-size: 0.95rem; margin-bottom: 8px;">Journal Specifics</h3>
+      </div>
+
+      <div class="full">
+        <label>Journal Page Range</label>
+        <div style="display: flex; gap: 16px; margin-bottom: 8px;">
+          <label style="display: flex; align-items: center; gap: 6px; font-weight: 400; cursor: pointer;">
+            <input type="radio" name="journal_page_type" value="all" checked onchange="toggleCustomPageRange(this)" />
+            All (Default, starts from page 8)
+          </label>
+          <label style="display: flex; align-items: center; gap: 6px; font-weight: 400; cursor: pointer;">
+            <input type="radio" name="journal_page_type" value="custom" onchange="toggleCustomPageRange(this)" />
+            Custom Range
+          </label>
+        </div>
+        <div id="custom_page_range_wrap" style="display: none; background: rgba(108,99,255,0.06); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
+          <label for="journal_custom_range">Custom Page Range</label>
+          <input type="text" id="journal_custom_range" placeholder="e.g., 8-55" />
+          <p style="font-size: 0.8rem; color: var(--muted); margin-top: 6px; line-height: 1.4;">
+            Specify exactly which pages the daily journals should span.<br>
+            For example: Daily Activity Journal Day 1 starts from page 8 so write it like <strong>8-55</strong> if starting at 8 and ending at page 55.
+          </p>
+        </div>
       </div>
 
       <div class="full">
@@ -533,6 +555,15 @@
   let currentApiKey = null;
   let pollInterval = null;
 
+  function toggleCustomPageRange(radio) {
+    const wrap = document.getElementById('custom_page_range_wrap');
+    if (radio.value === 'custom') {
+      wrap.style.display = 'block';
+    } else {
+      wrap.style.display = 'none';
+    }
+  }
+
   // ── Download Template ──
   document.getElementById('downloadTemplateBtn').addEventListener('click', () => {
     window.location.href = '/download-template';
@@ -632,6 +663,11 @@
     fd.append('industry_partner_name', val('industry_partner_name'));
     fd.append('phone_no', val('phone_no'));
     fd.append('email_id', val('email_id'));
+
+    const journalPageType = document.querySelector('input[name="journal_page_type"]:checked').value;
+    fd.append('journal_page_type', journalPageType);
+    fd.append('journal_custom_range', val('journal_custom_range'));
+
     fd.append('work_description', val('work-desc'));
     fd.append('api_key', currentApiKey);
 
@@ -765,11 +801,16 @@
     pdfInput.value = '';
     fileDisplay.textContent = '';
     ['start-date','end-date','ojt-timing','department','designation','work-desc','api-key',
-     'name','registration_number','program_name','semester','location','industry_partner_name','phone_no','email_id']
+     'name','registration_number','program_name','semester','location','industry_partner_name','phone_no','email_id', 'journal_custom_range']
       .forEach(id => {
           const el = document.getElementById(id);
           if (el) el.value = '';
       });
+    const allRadio = document.querySelector('input[name="journal_page_type"][value="all"]');
+    if (allRadio) {
+      allRadio.checked = true;
+      toggleCustomPageRange(allRadio);
+    }
     if (window.fpSkipDates) window.fpSkipDates.clear();
     document.getElementById('days-list').innerHTML = '';
     document.getElementById('progress-bar').style.width = '0%';

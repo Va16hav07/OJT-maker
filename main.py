@@ -111,6 +111,8 @@ def generate_pdf_background(task_id: str, api_key: str):
         department = task["department"]
         designation = task["designation"]
         user_details = task.get("user_details", {})
+        journal_start_page = task.get("journal_start_page", 8)
+        journal_end_page = task.get("journal_end_page")
         total = len(daily_work)
 
         # STEP 1: Generate ALL entries in ONE API call
@@ -160,7 +162,11 @@ def generate_pdf_background(task_id: str, api_key: str):
 
         task["message"] = "Filling PDF template..."
         print(f"[Task {task_id}] {task['message']}")
-        filled_pdf = fill_pdf_with_overlay(pdf_bytes, pages_data, user_details)
+        filled_pdf = fill_pdf_with_overlay(
+            pdf_bytes, pages_data, user_details,
+            journal_start_page=journal_start_page,
+            journal_end_page=journal_end_page
+        )
         print(f"[Task {task_id}] PDF filled successfully")
 
         # Write to a temp file
@@ -213,6 +219,8 @@ async def upload(
     industry_partner_name: str = Form(default=""),
     phone_no: str = Form(default=""),
     email_id: str = Form(default=""),
+    journal_page_type: str = Form(default="all"),
+    journal_custom_range: str = Form(default=""),
     work_description: str = Form(...),
     api_key: str = Form(...),
 ):
@@ -257,6 +265,18 @@ async def upload(
                 },
             )
 
+        # Parse journal pages
+        journal_start_page = 8
+        journal_end_page = None
+        if journal_page_type == "custom" and journal_custom_range:
+            parts = journal_custom_range.split("-")
+            try:
+                journal_start_page = int(parts[0].strip())
+                if len(parts) > 1 and parts[1].strip():
+                    journal_end_page = int(parts[1].strip())
+            except ValueError:
+                pass
+
         # Split work into days via Gemini
         daily_work = split_work_into_days(api_key, work_description, working_days, num_days)
 
@@ -280,6 +300,8 @@ async def upload(
                 "phone_no": phone_no,
                 "email_id": email_id,
             },
+            "journal_start_page": journal_start_page,
+            "journal_end_page": journal_end_page,
             "progress": 0,
             "total_pages": num_days,
             "current_page": 0,
