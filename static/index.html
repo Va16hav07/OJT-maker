@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OJT Journal Maker</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -373,8 +374,8 @@
       </div>
 
       <div class="full">
-        <label for="skip-dates">Skip Dates <span style="color:var(--muted);font-weight:400">(optional, comma-separated)</span></label>
-        <input type="text" id="skip-dates" placeholder="e.g. 2024-12-25, 2025-01-01" />
+        <label for="skip-dates">Skip Dates <span style="color:var(--muted);font-weight:400">(optional, multiple dates allowed)</span></label>
+        <input type="text" id="skip-dates" placeholder="Select multiple dates..." />
       </div>
 
       <div>
@@ -715,8 +716,9 @@
     currentApiKey = null;
     pdfInput.value = '';
     fileDisplay.textContent = '';
-    ['start-date','end-date','skip-dates','ojt-timing','department','designation','work-desc','api-key']
+    ['start-date','end-date','ojt-timing','department','designation','work-desc','api-key']
       .forEach(id => document.getElementById(id).value = '');
+    if (window.fpSkipDates) window.fpSkipDates.clear();
     document.getElementById('days-list').innerHTML = '';
     document.getElementById('progress-bar').style.width = '0%';
     document.getElementById('progress-text').textContent = '0%';
@@ -726,6 +728,13 @@
     ['error-1','error-2','error-3'].forEach(hideError);
     goToStep(1);
   }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+  window.fpSkipDates = flatpickr("#skip-dates", {
+    mode: "multiple",
+    dateFormat: "Y-m-d"
+  });
 </script>
 </body>
 </html>
