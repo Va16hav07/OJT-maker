@@ -52,7 +52,7 @@ def call_gemini(model, prompt, retries=3):
 # ─────────────────────────────────────────────
 def split_work_into_days(api_key: str, work_description: str, dates: list, num_days: int) -> list:
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash-lite')
 
     prompt = f"""
 You are a professional OJT training supervisor.
@@ -101,7 +101,7 @@ WORK:
 # ─────────────────────────────────────────────
 def generate_all_journals(api_key: str, daily_data: list) -> list:
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash-lite')
 
     combined_input = "\n".join([
         f"Day {d['day']} ({d['date']}): {d['work']}"
@@ -183,7 +183,7 @@ def generate_full_entries(api_key: str, work_description: str, dates: list):
 def generate_journal_entry(api_key: str, date: str, work: str) -> dict:
     """Generate structured journal entry for one day using Gemini."""
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-2.5-flash')
+    model = genai.GenerativeModel('gemini-2.5-flash-lite')
     
     # Format date to DD-M-YYYY
     formatted_date = format_date(date)
