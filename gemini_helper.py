@@ -13,7 +13,7 @@ def format_date(date_str: str) -> str:
         for fmt in ["%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%Y/%m/%d", "%d-%m-%y"]:
             try:
                 parsed = datetime.strptime(date_str, fmt)
-                return parsed.strftime("%-d-%-m-%Y")
+                return parsed.strftime("%d-%m-%Y")
             except ValueError:
                 continue
         return date_str
