@@ -82,7 +82,7 @@ def cleanup_old_tasks():
 # ---------------------------------------------------------------------------
 
 def get_working_days(start: datetime, end: datetime, skip: list) -> list:
-    """Return list of date strings (YYYY-MM-DD) for Mon-Fri between start and end, excluding skip."""
+    """Return list of date strings (YYYY-MM-DD) between start and end, excluding only explicitly skipped dates."""
     skip_set = set()
     for s in skip:
         s = s.strip()
@@ -96,7 +96,7 @@ def get_working_days(start: datetime, end: datetime, skip: list) -> list:
     current = start.date()
     end_date = end.date()
     while current <= end_date:
-        if current.weekday() < 5 and current not in skip_set:
+        if current not in skip_set:
             days.append(current.strftime("%Y-%m-%d"))
         current += timedelta(days=1)
     return days
