@@ -128,3 +128,10 @@ The app will be available at **http://localhost:8000**.
 - If the PDF template has more pages than working days, the extra pages are left blank.
 - The date range must have at least as many pages in the PDF as there are working days.
 - All processing is done locally except for the Gemini API calls.
+
+---
+
+## ☕ Support
+
+If this project helps you, you can support it here:  
+[buymeachai.in/va16hav](https://buymeachai.in/va16hav)
