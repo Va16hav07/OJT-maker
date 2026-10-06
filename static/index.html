@@ -4,665 +4,937 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OJT Journal Maker</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+  <meta name="color-scheme" content="light dark" />
+  <script>
+    // Apply a saved theme before first paint so the page doesn't flash.
+    try {
+      const saved = localStorage.getItem('ojt-theme');
+      if (saved === 'light' || saved === 'dark') document.documentElement.dataset.theme = saved;
+    } catch (e) {}
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13/dist/flatpickr.min.css" />
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
     :root {
-      --bg:        #0f1117;
-      --card:      #1a1d27;
-      --card2:     #20243a;
-      --accent:    #6c63ff;
-      --accent-h:  #857dff;
-      --text:      #e2e8f0;
-      --muted:     #8892a4;
-      --border:    #2d3347;
-      --success:   #22c55e;
-      --error:     #ef4444;
-      --radius:    12px;
+      --bg:          #F6F7F9;
+      --surface:     #FFFFFF;
+      --surface-2:   #FAFBFC;
+      --border:      #E1E4EA;
+      --field:       #C5CAD3;
+      --text:        #16181D;
+      --text-2:      #3D424D;
+      --muted:       #5B6170;
+      --placeholder: #8A909C;
+      --accent:      #2346D0;
+      --accent-h:    #1B37A8;
+      --on-accent:   #FFFFFF;
+      --accent-soft: #EEF1FB;
+      --accent-ink:  #16308F;
+      --link:        #2346D0;
+      --link-h:      #16308F;
+      --ink:         #16181D;
+      --ink-border:  #343843;
+      --ink-text:    #FFFFFF;
+      --ink-muted:   #B7BCC6;
+      --highlight:   #F7D046;
+      --mark:        #F7D046;
+      --error-bg:    #FDECEC;
+      --error-text:  #9B1C1C;
+      --error-line:  #F3B8B8;
+      --track:       #E7EAF0;
+      --shadow:      0 1px 2px rgba(22, 24, 29, 0.04);
+      color-scheme: light;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg:          #0F1115;
+        --surface:     #171A21;
+        --surface-2:   #1C2029;
+        --border:      #2A2F3A;
+        --field:       #3A404D;
+        --text:        #E8EAEE;
+        --text-2:      #C9CDD5;
+        --muted:       #A0A6B2;
+        --placeholder: #737A87;
+        --accent:      #4A66E8;
+        --accent-h:    #5C77F0;
+        --on-accent:   #FFFFFF;
+        --accent-soft: #1F2747;
+        --accent-ink:  #B4C3FF;
+        --link:        #9DB0FF;
+        --link-h:      #C3CFFF;
+        --ink:         #1E222B;
+        --ink-border:  #343A47;
+        --ink-text:    #E8EAEE;
+        --ink-muted:   #A0A6B2;
+        --highlight:   rgba(247, 208, 70, 0.32);
+        --mark:        #F7D046;
+        --error-bg:    #2A1517;
+        --error-text:  #FFB4B4;
+        --error-line:  #5C2A2E;
+        --track:       #262B35;
+        --shadow:      none;
+        color-scheme: dark;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg:          #0F1115;
+      --surface:     #171A21;
+      --surface-2:   #1C2029;
+      --border:      #2A2F3A;
+      --field:       #3A404D;
+      --text:        #E8EAEE;
+      --text-2:      #C9CDD5;
+      --muted:       #A0A6B2;
+      --placeholder: #737A87;
+      --accent:      #4A66E8;
+      --accent-h:    #5C77F0;
+      --on-accent:   #FFFFFF;
+      --accent-soft: #1F2747;
+      --accent-ink:  #B4C3FF;
+      --link:        #9DB0FF;
+      --link-h:      #C3CFFF;
+      --ink:         #1E222B;
+      --ink-border:  #343A47;
+      --ink-text:    #E8EAEE;
+      --ink-muted:   #A0A6B2;
+      --highlight:   rgba(247, 208, 70, 0.32);
+      --mark:        #F7D046;
+      --error-bg:    #2A1517;
+      --error-text:  #FFB4B4;
+      --error-line:  #5C2A2E;
+      --track:       #262B35;
+      --shadow:      none;
+      color-scheme: dark;
     }
 
+    *, *::before, *::after { box-sizing: border-box; }
+    [hidden] { display: none !important; }
     body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Segoe UI', system-ui, sans-serif;
+      margin: 0;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
-      align-items: center;
-    }
-
-    /* ── Header ── */
-    header {
-      width: 100%;
-      background: var(--card);
-      border-bottom: 1px solid var(--border);
-      padding: 18px 32px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    header .logo { font-size: 1.5rem; }
-    header h1 { font-size: 1.3rem; font-weight: 700; letter-spacing: -0.3px; }
-    header span { color: var(--accent); }
-
-    /* ── Wizard container ── */
-    .wizard {
-      width: 100%;
-      max-width: 820px;
-      padding: 32px 16px 64px;
-    }
-
-    /* ── Step indicator ── */
-    .steps {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0;
-      margin-bottom: 40px;
-    }
-    .step-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      position: relative;
-      flex: 1;
-      max-width: 160px;
-    }
-    .step-item:not(:last-child)::after {
-      content: '';
-      position: absolute;
-      top: 18px;
-      left: calc(50% + 22px);
-      width: calc(100% - 44px);
-      height: 2px;
-      background: var(--border);
-      transition: background 0.4s;
-    }
-    .step-item.done:not(:last-child)::after { background: var(--accent); }
-    .step-circle {
-      width: 36px; height: 36px;
-      border-radius: 50%;
-      background: var(--card2);
-      border: 2px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      font-weight: 700; font-size: 0.85rem;
-      transition: all 0.3s;
-      position: relative; z-index: 1;
-    }
-    .step-item.active .step-circle {
-      background: var(--accent);
-      border-color: var(--accent);
-      box-shadow: 0 0 0 4px rgba(108,99,255,0.25);
-    }
-    .step-item.done .step-circle {
-      background: var(--accent);
-      border-color: var(--accent);
-    }
-    .step-label { font-size: 0.72rem; color: var(--muted); text-align: center; }
-    .step-item.active .step-label { color: var(--accent); font-weight: 600; }
-
-    /* ── Cards / panels ── */
-    .panel {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px 32px;
-      display: none;
-    }
-    .panel.active { display: block; animation: fadeIn 0.3s ease; }
-    @keyframes fadeIn { from { opacity:0; transform: translateY(8px); } to { opacity:1; transform:none; } }
-
-    h2 { font-size: 1.2rem; font-weight: 700; margin-bottom: 4px; }
-    .subtitle { color: var(--muted); font-size: 0.87rem; margin-bottom: 24px; }
-
-    /* ── Form ── */
-    .form-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-    .form-grid .full { grid-column: 1 / -1; }
-
-    label { display: block; font-size: 0.82rem; color: var(--muted); margin-bottom: 5px; font-weight: 600; letter-spacing: 0.3px; }
-    input, textarea, select {
-      width: 100%;
-      background: var(--card2);
-      border: 1px solid var(--border);
-      border-radius: 8px;
+      background: var(--bg);
       color: var(--text);
-      padding: 10px 14px;
-      font-size: 0.92rem;
-      font-family: inherit;
-      transition: border 0.2s, box-shadow 0.2s;
-      outline: none;
-    }
-    input:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(108,99,255,0.15); }
-    textarea { resize: vertical; min-height: 100px; line-height: 1.5; }
-
-    /* ── Drop zone ── */
-    .dropzone {
-      border: 2px dashed var(--border);
-      border-radius: var(--radius);
-      padding: 36px 20px;
-      text-align: center;
-      cursor: pointer;
-      transition: border 0.2s, background 0.2s;
-      margin-bottom: 24px;
-      position: relative;
-    }
-    .dropzone:hover, .dropzone.drag-over { border-color: var(--accent); background: rgba(108,99,255,0.06); }
-    .dropzone .icon { font-size: 2.4rem; margin-bottom: 10px; }
-    .dropzone p { color: var(--muted); font-size: 0.9rem; }
-    .dropzone .file-name { color: var(--success); font-weight: 600; font-size: 0.95rem; margin-top: 6px; }
-    #pdf-input { display: none; }
-
-    /* ── API key field ── */
-    .api-row { display: flex; gap: 10px; align-items: flex-end; }
-    .api-row input { flex: 1; }
-    .api-row a {
-      font-size: 0.75rem; color: var(--accent); white-space: nowrap;
-      text-decoration: none; padding-bottom: 11px;
-    }
-    .api-row a:hover { text-decoration: underline; }
-
-    /* ── Buttons ── */
-    .btn {
-      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-      padding: 12px 24px;
-      border-radius: 8px;
-      font-size: 0.95rem; font-weight: 600;
-      cursor: pointer; border: none; transition: all 0.2s;
-    }
-    .btn-primary { background: var(--accent); color: #fff; width: 100%; margin-top: 24px; }
-    .btn-primary:hover:not(:disabled) { background: var(--accent-h); transform: translateY(-1px); box-shadow: 0 4px 16px rgba(108,99,255,0.35); }
-    .btn-primary:disabled { opacity: 0.55; cursor: not-allowed; }
-    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); }
-    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
-
-    /* ── Spinner ── */
-    .spinner {
-      display: none;
-      width: 20px; height: 20px;
-      border: 3px solid rgba(255,255,255,0.25);
-      border-top-color: #fff;
-      border-radius: 50%;
-      animation: spin 0.7s linear infinite;
-    }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── Day cards ── */
-    .days-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 20px;
-    }
-    .badge {
-      background: rgba(108,99,255,0.15);
-      color: var(--accent);
-      padding: 3px 12px; border-radius: 20px;
-      font-size: 0.8rem; font-weight: 600;
-    }
-    .days-list {
-      max-height: 460px;
-      overflow-y: auto;
-      display: flex; flex-direction: column; gap: 12px;
-      padding-right: 4px;
-      margin-bottom: 24px;
-    }
-    .days-list::-webkit-scrollbar { width: 6px; }
-    .days-list::-webkit-scrollbar-track { background: transparent; }
-    .days-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-
-    .day-card {
-      background: var(--card2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 16px 18px;
-      transition: border 0.2s;
-    }
-    .day-card:focus-within { border-color: var(--accent); }
-    .day-card-header {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 10px;
-    }
-    .day-num { font-weight: 700; font-size: 0.95rem; }
-    .day-date { color: var(--muted); font-size: 0.82rem; }
-    .day-card textarea { min-height: 80px; font-size: 0.87rem; }
-
-    /* ── Progress ── */
-    .progress-wrap {
-      background: var(--card2);
-      border-radius: 8px;
-      height: 10px;
-      overflow: hidden;
-      margin: 16px 0;
-    }
-    .progress-bar {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent), var(--accent-h));
-      border-radius: 8px;
-      transition: width 0.4s ease;
-      width: 0%;
-    }
-    .progress-text { text-align: center; color: var(--muted); font-size: 0.87rem; margin-top: 8px; }
-    .progress-label { font-size: 0.95rem; font-weight: 600; margin-bottom: 4px; }
-
-    /* ── Done state ── */
-    .done-wrap {
-      text-align: center;
-      padding: 24px 0;
-      display: none;
-    }
-    .done-icon { font-size: 3.5rem; margin-bottom: 16px; animation: pop 0.5s cubic-bezier(.36,1.5,.6,1); }
-    @keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
-    .done-title { font-size: 1.4rem; font-weight: 700; margin-bottom: 6px; }
-    .done-sub { color: var(--muted); margin-bottom: 24px; }
-    .btn-download {
-      background: var(--success);
-      color: #fff;
-      padding: 14px 32px;
-      font-size: 1rem;
-      border-radius: 10px;
-      border: none; cursor: pointer; font-weight: 700;
-      transition: all 0.2s;
-      display: inline-flex; align-items: center; gap: 10px;
-    }
-    .btn-download:hover { filter: brightness(1.1); transform: translateY(-2px); box-shadow: 0 6px 20px rgba(34,197,94,0.35); }
-
-    /* ── Error / info banners ── */
-    .banner {
-      padding: 12px 16px;
-      border-radius: 8px;
-      font-size: 0.88rem;
-      margin-bottom: 16px;
-      display: none;
+      font-family: 'IBM Plex Sans', system-ui, sans-serif;
+      font-size: 15px;
       line-height: 1.5;
     }
-    .banner.error { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.35); color: #f87171; }
-    .banner.info  { background: rgba(108,99,255,0.1);  border: 1px solid rgba(108,99,255,0.3);  color: #a5b4fc; }
+    a { color: var(--link); }
+    a:hover { color: var(--link-h); }
+    input, textarea, button { font: inherit; color: inherit; }
+    ::placeholder { color: var(--placeholder); }
+    :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+    .display { font-family: 'Bricolage Grotesque', sans-serif; letter-spacing: -0.02em; }
+    .mono { font-family: 'IBM Plex Mono', monospace; }
+    .hl { background: linear-gradient(transparent 58%, var(--highlight) 58%); }
+    .container { width: 100%; max-width: 1160px; margin: 0 auto; padding: 0 24px; }
 
-    /* ── Generating state ── */
-    .generating-wrap { text-align: center; padding: 12px 0; }
-    .gen-spinner {
-      width: 48px; height: 48px;
-      border: 4px solid rgba(108,99,255,0.2);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 1s linear infinite;
-      margin: 0 auto 16px;
+    /* ── Header / footer ── */
+    .site-footer { background: var(--surface); }
+    /* Translucent header: content scrolls underneath; its edge line only appears once something does */
+    .site-header {
+      position: sticky; top: 0; z-index: 20;
+      background: var(--surface);
+      background: color-mix(in srgb, var(--surface) 72%, transparent);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      backdrop-filter: blur(20px) saturate(180%);
+      border-bottom: 1px solid transparent;
+      transition: border-color 0.2s ease;
+    }
+    .site-header.scrolled { border-bottom-color: var(--border); }
+    .site-footer { border-top: 1px solid var(--border); margin-top: auto; }
+    .header-row { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding-top: 12px; padding-bottom: 12px; }
+    .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text); }
+    .brand:hover { color: var(--text); }
+    .brand span { font-family: 'Bricolage Grotesque', sans-serif; font-weight: 700; font-size: 19px; letter-spacing: -0.2px; }
+    .brand svg { color: var(--accent); }
+    .header-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 20px; font-size: 14px; font-weight: 500; }
+    .header-nav a { text-decoration: none; }
+    .theme-toggle {
+      width: 44px; height: 44px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--surface); color: var(--text); cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .theme-toggle:hover { background: var(--surface-2); }
+
+    /* Press feedback on pointer-down, not on release */
+    .btn, .theme-toggle, .chip button { transition: transform 100ms ease-out, background-color 0.15s ease; }
+    .btn:active:not(:disabled), .theme-toggle:active, .chip button:active { transform: scale(0.97); }
+    .choice { transition: transform 100ms ease-out; }
+    .choice:active { transform: scale(0.99); }
+
+    /* Ease the light/dark switch instead of an abrupt brightness jump */
+    html.theme-anim, html.theme-anim *, html.theme-anim *::before, html.theme-anim *::after {
+      transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease, fill 0.3s ease !important;
+    }
+    .theme-toggle .icon-sun { display: none; }
+    :root[data-theme="dark"] .theme-toggle .icon-sun { display: block; }
+    :root[data-theme="dark"] .theme-toggle .icon-moon { display: none; }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) .theme-toggle .icon-sun { display: block; }
+      :root:not([data-theme="light"]) .theme-toggle .icon-moon { display: none; }
+    }
+    .footer-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding-top: 20px; padding-bottom: 20px; font-size: 14px; color: var(--muted); }
+
+    main { padding-top: 36px; padding-bottom: 56px; }
+
+    /* ── Stepper ── */
+    .steps { list-style: none; margin: 0 0 32px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 28px; font-size: 14px; }
+    .step { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+    .step-dot {
+      width: 26px; height: 26px; border-radius: 13px; border: 1.5px solid var(--field);
+      display: flex; align-items: center; justify-content: center; font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+    }
+    .step-dot svg { display: none; }
+    .step.active { color: var(--text); font-weight: 600; }
+    .step.active .step-dot { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+    .step.done .step-dot { background: var(--accent-soft); border-color: var(--accent-soft); color: var(--accent-ink); }
+    .step.done .step-dot span { display: none; }
+    .step.done .step-dot svg { display: block; }
+
+    /* ── Panels ── */
+    .panel { display: none; }
+    .panel.active { display: block; animation: panelForward 0.32s cubic-bezier(0.2, 0.8, 0.2, 1); }
+    .panel.active.back { animation-name: panelBack; }
+    @keyframes panelForward { from { opacity: 0; transform: translateX(24px); } to { opacity: 1; transform: none; } }
+    @keyframes panelBack { from { opacity: 0; transform: translateX(-24px); } to { opacity: 1; transform: none; } }
+    @keyframes fadeOnly { from { opacity: 0; } to { opacity: 1; } }
+
+    h1.page-title { margin: 0 0 10px; font-size: clamp(32px, 5vw, 44px); line-height: 1.08; font-weight: 700; max-width: 760px; }
+    .lede { margin: 0 0 32px; color: var(--muted); font-size: 17px; max-width: 640px; }
+
+    .layout { display: flex; flex-wrap: wrap; gap: 28px; align-items: flex-start; }
+    .layout-main { flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+    .layout-side { flex: 1 1 300px; min-width: 0; }
+    /* Keep the summary and its submit button in view while the form scrolls */
+    #panel-1 .layout-side { position: sticky; top: 92px; max-height: calc(100vh - 116px); overflow-y: auto; }
+    /* Once the summary drops below the form, float the button at the bottom of the screen instead */
+    @media (max-width: 935px) {
+      #panel-1 .layout-side { position: static; max-height: none; overflow: visible; }
+      #btn-upload { position: fixed; left: 16px; right: 16px; bottom: 14px; z-index: 10; }
+      #panel-1.active { padding-bottom: 72px; }
+      #panel-1.active::after {
+        content: ''; position: fixed; left: 0; right: 0; bottom: 0; height: 80px; z-index: 9;
+        background: var(--bg);
+        background: color-mix(in srgb, var(--bg) 72%, transparent);
+        -webkit-backdrop-filter: blur(20px) saturate(180%);
+        backdrop-filter: blur(20px) saturate(180%);
+        border-top: 1px solid var(--border);
+      }
     }
 
-    /* ── Responsive ── */
-    @media (max-width: 560px) {
-      .form-grid { grid-template-columns: 1fr; }
-      .panel { padding: 20px 16px; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; box-shadow: var(--shadow); }
+    .card h2 { margin: 0 0 4px; font-size: 20px; font-weight: 600; }
+    .card-desc { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+
+    .fields { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+    .field { display: flex; flex-direction: column; gap: 6px; }
+    .field label, .label { font-size: 14px; font-weight: 600; }
+    .label-note { font-weight: 400; color: var(--muted); }
+    .input, .textarea {
+      width: 100%; border: 1px solid var(--field); border-radius: 8px; background: var(--surface); color: var(--text);
+    }
+    .input { height: 44px; padding: 0 12px; }
+    .textarea { padding: 12px; resize: vertical; line-height: 1.55; }
+    .input:focus, .textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .input[aria-invalid="true"], .textarea[aria-invalid="true"], .dropzone.invalid { border-color: var(--error-text); }
+    .input[aria-invalid="true"]:focus, .textarea[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px var(--error-bg); }
+
+    /* Dropzone */
+    .dropzone {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 16px; border: 1.5px dashed var(--field);
+      border-radius: 12px; padding: 22px; cursor: pointer; background: var(--surface-2); transition: border-color 0.15s, background 0.15s;
+    }
+    .dropzone:hover, .dropzone.drag-over { border-color: var(--accent); background: var(--accent-soft); }
+    .dropzone:focus-within { border-color: var(--accent); }
+    .dropzone svg { color: var(--accent); flex: none; }
+    .dropzone-text { flex: 1 1 220px; }
+    .dropzone-title { display: block; font-weight: 600; }
+    .dropzone-sub { display: block; color: var(--muted); font-size: 14px; }
+    .dropzone.has-file .dropzone-title { color: var(--accent-ink); }
+    .dropzone-alt { font-size: 14px; color: var(--muted); }
+
+    /* Skip-date chips */
+    .chip-box {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px; min-height: 44px; border: 1px solid var(--field);
+      border-radius: 8px; padding: 6px 8px; background: var(--surface); cursor: text;
+    }
+    .chip-box:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .chip {
+      display: inline-flex; align-items: center; gap: 2px; background: var(--accent-soft); color: var(--accent-ink);
+      border-radius: 6px; padding: 0 0 0 10px; font-family: 'IBM Plex Mono', monospace; font-size: 13px;
+    }
+    .chip button { width: 30px; height: 30px; border: 0; background: transparent; color: inherit; cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 6px; }
+    .chip button:hover { background: rgba(127, 127, 127, 0.15); }
+    .chip-input { flex: 1 1 120px; min-width: 0; height: 30px; border: 0; outline: none; background: transparent; cursor: pointer; }
+
+    /* Page-range choice */
+    .choices { border: 0; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 12px; }
+    .choice {
+      flex: 1 1 220px; display: flex; gap: 12px; align-items: flex-start; border: 1px solid var(--field);
+      border-radius: 10px; padding: 14px 16px; cursor: pointer;
+    }
+    .choice:has(input:checked) { border: 1.5px solid var(--accent); background: var(--accent-soft); padding: 13.5px 15.5px; }
+    .choice input { margin: 3px 0 0; width: 18px; height: 18px; accent-color: var(--accent); }
+    .choice-title { display: block; font-weight: 600; }
+    .choice-sub { display: block; color: var(--muted); font-size: 14px; }
+    #custom-range-wrap { margin-top: 16px; max-width: 320px; }
+    .hint { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
+
+    .textarea-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-top: 8px; font-size: 13px; color: var(--muted); }
+    .key-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+    .key-row .input { flex: 1 1 280px; min-width: 0; width: auto; font-family: 'IBM Plex Mono', monospace; }
+    .icon-link { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-weight: 500; text-decoration: none; }
+
+    /* Dark summary panel */
+    .ink-panel { background: var(--ink); color: var(--ink-text); border: 1px solid var(--ink-border); border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 18px; }
+    .ink-panel h2 { margin: 0; font-size: 20px; font-weight: 600; }
+    .ink-panel .muted { color: var(--ink-muted); font-size: 13px; margin: 0; }
+    .summary { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 10px 16px; font-size: 14px; }
+    .summary dt { color: var(--ink-muted); }
+    .summary dd { margin: 0; text-align: right; font-family: 'IBM Plex Mono', monospace; }
+    .big-count { border-top: 1px solid var(--ink-border); padding-top: 16px; display: flex; align-items: baseline; gap: 10px; }
+    .big-count strong { font-family: 'Bricolage Grotesque', sans-serif; font-size: 48px; line-height: 1; color: var(--mark); }
+
+    /* Buttons */
+    .btn {
+      min-height: 48px; padding: 0 22px; border-radius: 10px; font-weight: 600; font-size: 15px; cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px; text-decoration: none; border: 1px solid transparent;
+    }
+    .btn-lg { min-height: 52px; font-size: 16px; }
+    .btn-primary { background: var(--accent); color: var(--on-accent); }
+    .btn-primary:hover { background: var(--accent-h); color: var(--on-accent); }
+    .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+    .btn-outline { background: transparent; border-color: var(--field); color: var(--text); font-weight: 500; }
+    .btn-outline:hover { background: var(--surface-2); color: var(--text); }
+    .btn-outline-ink { background: transparent; border-color: #4A4F5C; color: var(--ink-text); font-weight: 500; }
+    .btn-outline-ink:hover { background: rgba(255, 255, 255, 0.06); color: var(--ink-text); }
+    .btn-mark { background: #F7D046; color: #16181D; }
+    .btn-mark:hover { background: #F2C522; color: #16181D; }
+    .spinner { display: none; width: 18px; height: 18px; border: 2px solid rgba(255, 255, 255, 0.35); border-top-color: #FFFFFF; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    .btn.loading .spinner { display: block; }
+    .btn.loading .btn-icon { display: none; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .banner { display: none; padding: 12px 16px; border-radius: 10px; font-size: 14px; white-space: pre-wrap; background: var(--error-bg); color: var(--error-text); border: 1px solid var(--error-line); }
+
+    /* Step 2 */
+    .review-head { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 28px; }
+    .review-head > div:first-child { flex: 1 1 480px; }
+    .review-head h1 { margin: 0 0 8px; font-size: clamp(30px, 4.5vw, 40px); line-height: 1.1; font-weight: 700; }
+    .review-head p { margin: 0; color: var(--muted); font-size: 16px; max-width: 620px; }
+    .pills { display: flex; flex-wrap: wrap; gap: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 13px; }
+    .pill { background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; }
+    .days { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(340px, 100%), 1fr)); gap: 16px; }
+    .day { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 10px; }
+    .day-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+    .day-head label { font-weight: 600; }
+    .day-meta { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--muted); white-space: nowrap; }
+    .day .textarea { background: var(--surface-2); font-size: 14px; border-color: var(--border); }
+    .action-bar { margin-top: 32px; padding: 20px 24px; background: var(--ink); color: var(--ink-text); border: 1px solid var(--ink-border); border-radius: 14px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; }
+    .action-bar > div:first-child { flex: 1 1 320px; }
+    .action-bar p { margin: 0; }
+    .action-bar .muted { margin-top: 2px; font-size: 14px; color: var(--ink-muted); }
+    .btn-row { display: flex; flex-wrap: wrap; gap: 10px; }
+
+    /* Step 3 */
+    .gen-card { max-width: 640px; margin: 0 auto; border-radius: 18px; padding: 36px; }
+    .gen-card h1, .done-card h1 { margin: 0 0 6px; font-size: clamp(28px, 4vw, 40px); line-height: 1.1; font-weight: 700; }
+    .gen-card > p { margin: 0 0 28px; color: var(--muted); }
+    .progress-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 10px; }
+    .progress-pct { font-family: 'IBM Plex Mono', monospace; font-size: 22px; font-weight: 500; color: var(--link); }
+    .progress { height: 10px; border-radius: 5px; background: var(--track); overflow: hidden; }
+    .progress-bar { width: 0; height: 100%; border-radius: 5px; background: var(--accent); transition: width 0.4s ease; }
+    .stages { list-style: none; margin: 32px 0 0; padding: 0; display: flex; flex-direction: column; gap: 16px; }
+    .stage { display: flex; gap: 14px; align-items: flex-start; color: var(--muted); }
+    .stage-dot { flex: none; width: 28px; height: 28px; border-radius: 14px; border: 1.5px solid var(--field); display: flex; align-items: center; justify-content: center; }
+    .stage-dot svg, .stage-dot i { display: none; }
+    .stage-title { display: block; font-weight: 600; }
+    .stage-sub { display: block; font-size: 14px; color: var(--muted); }
+    .stage.active, .stage.done { color: var(--text); }
+    .stage.active .stage-dot { border: 2px solid var(--accent); }
+    .stage.active .stage-dot i { display: block; width: 10px; height: 10px; border-radius: 5px; background: var(--accent); }
+    .stage.done .stage-dot { background: var(--accent-soft); border-color: var(--accent-soft); color: var(--accent-ink); }
+    .stage.done .stage-dot svg { display: block; }
+    #error-3 { margin-top: 24px; }
+
+    .done-layout { display: flex; flex-wrap: wrap; gap: 24px; align-items: stretch; }
+    .done-card { flex: 999 1 520px; min-width: 0; border-radius: 18px; padding: 36px; display: flex; flex-direction: column; gap: 24px; }
+    .done-card > div > p { margin: 0; color: var(--muted); font-size: 16px; }
+    .file-row { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; background: var(--surface-2); }
+    .file-row svg { color: var(--accent); flex: none; }
+    .file-row > span { flex: 1 1 200px; min-width: 0; }
+    .file-name { display: block; font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+    .checklist { border-top: 1px solid var(--border); padding-top: 20px; }
+    .checklist h2 { margin: 0 0 10px; font-size: 15px; font-weight: 600; }
+    .checklist ul { margin: 0; padding-left: 20px; color: var(--text-2); display: flex; flex-direction: column; gap: 6px; }
+    .support { flex: 1 1 280px; min-width: 0; border-radius: 18px; padding: 28px; gap: 14px; }
+    .support h2 { font-size: 24px; line-height: 1.2; }
+    .support p { margin: 0; color: var(--ink-muted); }
+    .support .btn { width: 100%; }
+    .support .btn:first-of-type { margin-top: auto; }
+
+    /* flatpickr, themed with the page tokens */
+    .flatpickr-calendar { background: var(--surface); border: 1px solid var(--border); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18); font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+    .flatpickr-calendar.arrowTop::before, .flatpickr-calendar.arrowTop::after { border-bottom-color: var(--surface); }
+    .flatpickr-calendar.arrowBottom::before, .flatpickr-calendar.arrowBottom::after { border-top-color: var(--surface); }
+    .flatpickr-months .flatpickr-month, .flatpickr-current-month .flatpickr-monthDropdown-months, .flatpickr-current-month input.cur-year, span.flatpickr-weekday { color: var(--text); fill: var(--text); background: transparent; }
+    .flatpickr-current-month .flatpickr-monthDropdown-months option { background: var(--surface); color: var(--text); }
+    .flatpickr-months .flatpickr-prev-month, .flatpickr-months .flatpickr-next-month { color: var(--text); fill: var(--text); }
+    .flatpickr-months .flatpickr-prev-month:hover svg, .flatpickr-months .flatpickr-next-month:hover svg { fill: var(--accent); }
+    .flatpickr-day { color: var(--text); }
+    .flatpickr-day:hover, .flatpickr-day:focus { background: var(--accent-soft); border-color: var(--accent-soft); }
+    .flatpickr-day.today { border-color: var(--accent); }
+    .flatpickr-day.selected, .flatpickr-day.selected:hover { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+    .flatpickr-day.prevMonthDay, .flatpickr-day.nextMonthDay, .flatpickr-day.flatpickr-disabled { color: var(--placeholder); }
+
+    @media (prefers-reduced-motion: reduce) {
+      .panel.active, .panel.active.back { animation: fadeOnly 0.2s ease; }
+      .btn:active:not(:disabled), .theme-toggle:active, .chip button:active, .choice:active { transform: none; }
+      .progress-bar { transition: none; }
+    }
+    @media (prefers-reduced-transparency: reduce) {
+      .site-header { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; }
+      #panel-1.active::after { background: var(--bg); -webkit-backdrop-filter: none; backdrop-filter: none; }
+    }
+    @media (prefers-contrast: more) {
+      .site-header { background: var(--surface); -webkit-backdrop-filter: none; backdrop-filter: none; border-bottom-color: var(--text); }
+      .card, .day, .pill, .file-row, .input, .textarea, .chip-box, .choice { border-color: var(--text); }
     }
   </style>
 </head>
 <body>
 
-<header>
-  <div class="logo">📋</div>
-  <h1>OJT <span>Journal Maker</span></h1>
-  <div style="margin-left: auto;">
-    <button id="downloadTemplateBtn" style="
-      background: var(--accent);
-      color: white;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 0.9rem;
-      font-weight: 600;
-      transition: background 0.2s;
-    " onmouseover="this.style.background='var(--accent-h)'" onmouseout="this.style.background='var(--accent)'">
-      ⬇️ Download Template
-    </button>
+<header class="site-header">
+  <div class="container header-row">
+    <a class="brand" href="/">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="3" width="18" height="22" rx="2"/><path d="M9 3v22"/><path d="M13 9h6M13 13h6M13 17h4"/></svg>
+      <span>OJT Journal Maker</span>
+    </a>
+    <nav class="header-nav" aria-label="Links">
+      <a href="/download-template">Default template PDF</a>
+      <a href="https://github.com/Va16hav07/OJT-maker" target="_blank" rel="noopener">GitHub</a>
+      <button type="button" class="theme-toggle" id="theme-toggle" aria-label="Switch to dark mode">
+        <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </nav>
   </div>
 </header>
 
-<div class="wizard">
+<main class="container">
 
-  <!-- Step indicators -->
-  <div class="steps">
-    <div class="step-item active" id="si-1">
-      <div class="step-circle">1</div>
-      <div class="step-label">Upload &amp; Configure</div>
-    </div>
-    <div class="step-item" id="si-2">
-      <div class="step-circle">2</div>
-      <div class="step-label">Review Daily Work</div>
-    </div>
-    <div class="step-item" id="si-3">
-      <div class="step-circle">3</div>
-      <div class="step-label">Generate &amp; Download</div>
-    </div>
-  </div>
+  <ol class="steps" aria-label="Progress">
+    <li class="step active" id="si-1"><span class="step-dot"><span>1</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span>Your details</li>
+    <li class="step" id="si-2"><span class="step-dot"><span>2</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span>Review days</li>
+    <li class="step" id="si-3"><span class="step-dot"><span>3</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span>Download</li>
+  </ol>
 
-  <!-- ── Panel 1: Upload & Configure ── -->
-  <div class="panel active" id="panel-1">
-    <h2>Upload PDF Template</h2>
-    <p class="subtitle">Upload your OJT journal PDF template and configure the OJT details.</p>
+  <!-- ── Step 1: Details ── -->
+  <section class="panel active" id="panel-1" aria-labelledby="title-1">
+    <h1 class="page-title display" id="title-1">Turn one description of your OJT into a <span class="hl">filled daily journal</span>.</h1>
+    <p class="lede">Upload your journal template, describe what you worked on, and Gemini writes one entry per day straight onto the PDF pages.</p>
 
-    <div style="background: rgba(108,99,255,0.1); border: 1px solid var(--accent); border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; font-size: 0.85rem; color: var(--text);">
-      <strong>📌 Quick Tips:</strong>
-      <ul style="margin: 8px 0 0 20px; line-height: 1.6;">
-        <li>👉 <strong>Download template:</strong> Click the <strong>"⬇️ Download Template"</strong> button in the top right if you don't have a PDF ready.</li>
-        <li>🔑 <strong>API Key:</strong> Use a <strong>fresh/new API key</strong> each time you click Generate for best results.</li>
-      </ul>
-    </div>
+    <form class="layout" id="details-form" novalidate>
+      <div class="layout-main">
 
-    <div id="error-1" class="banner error"></div>
-
-    <div class="dropzone" id="dropzone">
-      <div class="icon">📄</div>
-      <p>Drop your PDF template here or <strong>click to upload</strong></p>
-      <p style="color: var(--muted); font-size: 0.8rem; margin-top: 6px;">Max file size: 50MB</p>
-      <div class="file-name" id="file-name-display"></div>
-      <input type="file" id="pdf-input" accept=".pdf" />
-    </div>
-
-    <div class="form-grid">
-      <div>
-        <label for="start-date">Start Date</label>
-        <input type="date" id="start-date" />
-      </div>
-      <div>
-        <label for="end-date">End Date</label>
-        <input type="date" id="end-date" />
-      </div>
-
-      <div class="full">
-        <label for="skip-dates">Skip Dates <span style="color:var(--muted);font-weight:400">(optional, multiple dates allowed)</span></label>
-        <input type="text" id="skip-dates" placeholder="Select multiple dates..." />
-      </div>
-
-      <div>
-        <label for="ojt-timing">OJT Timing</label>
-        <input type="text" id="ojt-timing" placeholder="e.g. 8:00 AM – 5:00 PM" />
-      </div>
-      <div>
-        <label for="department">Department</label>
-        <input type="text" id="department" placeholder="e.g. Information Technology" />
-      </div>
-      <div class="full">
-        <label for="designation">Designation / Position</label>
-        <input type="text" id="designation" placeholder="e.g. OJT Trainee" />
-      </div>
-
-      <div class="full" style="margin-top: 10px;">
-        <h3 style="font-size: 0.95rem; margin-bottom: 8px;">Trainee Details (Page 3) <span style="color:var(--muted);font-weight:400;font-size:0.85rem;">(optional)</span></h3>
-      </div>
-      <div>
-        <label for="name">Name</label>
-        <input type="text" id="name" placeholder="John Doe" />
-      </div>
-      <div>
-        <label for="registration_number">Registration Number</label>
-        <input type="text" id="registration_number" placeholder="12345678" />
-      </div>
-      <div>
-        <label for="program_name">Program Name</label>
-        <input type="text" id="program_name" placeholder="e.g. B.Tech Computer Science" />
-      </div>
-      <div>
-        <label for="semester">Semester</label>
-        <input type="text" id="semester" placeholder="e.g. 6th" />
-      </div>
-      <div>
-        <label for="location">Location</label>
-        <input type="text" id="location" placeholder="e.g. New York" />
-      </div>
-      <div>
-        <label for="industry_partner_name">Industry Partner Name</label>
-        <input type="text" id="industry_partner_name" placeholder="e.g. Acme Corp" />
-      </div>
-      <div>
-        <label for="phone_no">Phone No</label>
-        <input type="text" id="phone_no" placeholder="e.g. +1 234 567 8900" />
-      </div>
-      <div>
-        <label for="email_id">Email Id</label>
-        <input type="email" id="email_id" placeholder="e.g. john@example.com" />
-      </div>
-
-      <div class="full" style="margin-top: 10px;">
-        <h3 style="font-size: 0.95rem; margin-bottom: 8px;">Journal Specifics</h3>
-      </div>
-
-      <div class="full">
-        <label>Journal Page Range</label>
-        <div style="display: flex; gap: 16px; margin-bottom: 8px;">
-          <label style="display: flex; align-items: center; gap: 6px; font-weight: 400; cursor: pointer;">
-            <input type="radio" name="journal_page_type" value="all" checked onchange="toggleCustomPageRange(this)" />
-            All (Default, starts from page 8)
+        <section class="card" aria-labelledby="s-template">
+          <h2 class="display" id="s-template">Journal template</h2>
+          <p class="card-desc">The PDF you were given. It needs a page for every journal day.</p>
+          <label class="dropzone" id="dropzone" for="pdf-input">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 17v-6M9.5 13.5 12 11l2.5 2.5"/></svg>
+            <span class="dropzone-text">
+              <span class="dropzone-title" id="file-name-display">Drop your PDF here, or browse</span>
+              <span class="dropzone-sub" id="file-sub">PDF up to 50 MB</span>
+            </span>
+            <input type="file" id="pdf-input" class="sr-only" accept=".pdf,application/pdf" />
           </label>
-          <label style="display: flex; align-items: center; gap: 6px; font-weight: 400; cursor: pointer;">
-            <input type="radio" name="journal_page_type" value="custom" onchange="toggleCustomPageRange(this)" />
-            Custom Range
-          </label>
-        </div>
-        <div id="custom_page_range_wrap" style="display: none; background: rgba(108,99,255,0.06); padding: 12px; border-radius: 8px; border: 1px solid var(--border);">
-          <label for="journal_custom_range">Custom Page Range</label>
-          <input type="text" id="journal_custom_range" placeholder="e.g., 8-55" />
-          <p style="font-size: 0.8rem; color: var(--muted); margin-top: 6px; line-height: 1.4;">
-            Specify exactly which pages the daily journals should span.<br>
-            For example: Daily Activity Journal Day 1 starts from page 8 so write it like <strong>8-55</strong> if starting at 8 and ending at page 55.
-          </p>
-        </div>
+          <p class="hint">No template? <a href="/download-template">Download the default one</a>.</p>
+        </section>
+
+        <section class="card" aria-labelledby="s-dates">
+          <h2 class="display" id="s-dates">Dates and schedule</h2>
+          <p class="card-desc">Every day in the range gets an entry, except the days you skip.</p>
+          <div class="fields">
+            <div class="field"><label for="start-date">Start date</label><input class="input" type="date" id="start-date" /></div>
+            <div class="field"><label for="end-date">End date</label><input class="input" type="date" id="end-date" /></div>
+          </div>
+          <div class="field" style="margin-top: 16px;">
+            <label for="skip-dates">Days to skip <span class="label-note">(holidays, leave, days off)</span></label>
+            <div class="chip-box" id="chip-box">
+              <span id="skip-chips" style="display: contents;"></span>
+              <input type="text" id="skip-dates" class="chip-input" placeholder="Pick dates" readonly />
+            </div>
+          </div>
+          <div class="fields" style="margin-top: 16px;">
+            <div class="field"><label for="ojt-timing">OJT timing</label><input class="input" type="text" id="ojt-timing" placeholder="9:00 AM – 5:00 PM" /></div>
+            <div class="field"><label for="department">Department</label><input class="input" type="text" id="department" placeholder="e.g. Information Technology" /></div>
+            <div class="field"><label for="designation">Designation</label><input class="input" type="text" id="designation" placeholder="e.g. OJT Trainee" /></div>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="s-you">
+          <h2 class="display" id="s-you">About you</h2>
+          <p class="card-desc">Printed on the trainee details page (page 3). All optional; leave any blank to fill by hand.</p>
+          <div class="fields">
+            <div class="field"><label for="name">Full name</label><input class="input" type="text" id="name" autocomplete="name" /></div>
+            <div class="field"><label for="registration_number">Registration number</label><input class="input" type="text" id="registration_number" placeholder="12345678" /></div>
+            <div class="field"><label for="program_name">Program</label><input class="input" type="text" id="program_name" placeholder="e.g. B.Tech Computer Science" /></div>
+            <div class="field"><label for="semester">Semester</label><input class="input" type="text" id="semester" placeholder="e.g. 6th" /></div>
+            <div class="field"><label for="industry_partner_name">Industry partner</label><input class="input" type="text" id="industry_partner_name" placeholder="Company name" /></div>
+            <div class="field"><label for="location">Location</label><input class="input" type="text" id="location" placeholder="City" /></div>
+            <div class="field"><label for="phone_no">Phone</label><input class="input" type="tel" id="phone_no" autocomplete="tel" /></div>
+            <div class="field"><label for="email_id">Email</label><input class="input" type="email" id="email_id" autocomplete="email" placeholder="you@college.edu" /></div>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="s-pages">
+          <h2 class="display" id="s-pages">Where the journal starts</h2>
+          <p class="card-desc">Day 1 goes on this page; each following day takes the next page.</p>
+          <fieldset class="choices">
+            <legend class="sr-only">Journal page range</legend>
+            <label class="choice">
+              <input type="radio" name="journal_page_type" value="all" checked />
+              <span><span class="choice-title">Standard template</span><span class="choice-sub">Starts on page 8</span></span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="journal_page_type" value="custom" />
+              <span><span class="choice-title">Custom pages</span><span class="choice-sub">For a different template</span></span>
+            </label>
+          </fieldset>
+          <div class="field" id="custom-range-wrap" hidden>
+            <label for="journal_custom_range">Page range</label>
+            <input class="input mono" type="text" id="journal_custom_range" placeholder="8-55" aria-describedby="range-hint" />
+            <p class="hint" id="range-hint">First and last page for daily entries, e.g. 8-55.</p>
+          </div>
+        </section>
+
+        <section class="card" aria-labelledby="s-work">
+          <h2 class="display" id="s-work"><label for="work-desc">What you worked on</label></h2>
+          <p class="card-desc">Describe the whole OJT in your own words: projects, features, bugs, tools. More detail means less repetitive days.</p>
+          <textarea class="textarea" id="work-desc" rows="7" placeholder="I built a student attendance portal with React and Flask. Started by learning the existing codebase, then designed the database schema…"></textarea>
+          <div class="textarea-meta"><span>Tip: name the tools you used, e.g. Git, VS Code, Postman.</span><span class="mono" id="word-count">0 words</span></div>
+        </section>
+
+        <section class="card" aria-labelledby="s-key">
+          <h2 class="display" id="s-key"><label for="api-key">Gemini API key</label></h2>
+          <p class="card-desc">Free from Google AI Studio. Sent with this request only and never saved.</p>
+          <div class="key-row">
+            <input class="input" type="password" id="api-key" placeholder="AIza…" autocomplete="off" spellcheck="false" />
+            <a class="icon-link" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Get a free key<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+          </div>
+        </section>
       </div>
 
-      <div class="full">
-        <label for="work-desc">Work Description <span style="color:var(--muted);font-weight:400">(overall work you did till date)</span></label>
-        <textarea id="work-desc" rows="5" placeholder="Describe the overall work you did during the OJT. The AI will split it into daily tasks..."></textarea>
-      </div>
+      <aside class="layout-side ink-panel" aria-label="Journal summary">
+        <h2 class="display">Your journal</h2>
+        <dl class="summary">
+          <dt>Range</dt><dd id="sum-range">–</dd>
+          <dt>Calendar days</dt><dd id="sum-days">–</dd>
+          <dt>Skipped</dt><dd id="sum-skipped">0</dd>
+          <dt>Journal pages</dt><dd id="sum-pages">–</dd>
+        </dl>
+        <div class="big-count"><strong id="sum-entries">0</strong><span>entries to write</span></div>
+        <p class="muted" id="sum-note">Pick your start and end dates to see how many pages you need.</p>
+        <div id="error-1" class="banner" role="alert"></div>
+        <button type="submit" class="btn btn-primary btn-lg" id="btn-upload">
+          <span class="spinner" aria-hidden="true"></span>
+          <span id="btn-upload-text">Split my work into days</span>
+          <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+        <p class="muted">You can edit every day before the PDF is made.</p>
+      </aside>
+    </form>
+  </section>
 
-      <div class="full">
-        <label>Gemini API Key</label>
-        <div class="api-row">
-          <input type="password" id="api-key" placeholder="AIza…" autocomplete="off" />
-          <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Get API key ↗</a>
-        </div>
-      </div>
-    </div>
-
-    <button class="btn btn-primary" id="btn-upload" onclick="handleUpload()">
-      <div class="spinner" id="spinner-1"></div>
-      <span id="btn-upload-text">Upload &amp; Process</span>
-    </button>
-  </div>
-
-  <!-- ── Panel 2: Review Daily Work ── -->
-  <div class="panel" id="panel-2">
-    <div class="days-header">
+  <!-- ── Step 2: Review ── -->
+  <section class="panel" id="panel-2" aria-labelledby="title-2">
+    <div class="review-head">
       <div>
-        <h2>AI Generated Daily Work</h2>
-        <p class="subtitle">Review and edit each day's work description before generating the PDF.</p>
+        <h1 class="display" id="title-2">Check each day before it goes on paper</h1>
+        <p id="review-sub">Edit anything that reads wrong; the full journal entry for each day is written from this text.</p>
       </div>
-      <div class="badge" id="day-count-badge">0 days</div>
-    </div>
-
-    <div id="error-2" class="banner error"></div>
-
-    <div class="days-list" id="days-list"></div>
-
-    <button class="btn btn-primary" id="btn-generate" onclick="handleGenerate()">
-      <div class="spinner" id="spinner-2"></div>
-      <span id="btn-generate-text">✨ Generate PDF</span>
-    </button>
-  </div>
-
-  <!-- ── Panel 3: Progress & Download ── -->
-  <div class="panel" id="panel-3">
-    <h2>Generating Your Journal</h2>
-    <p class="subtitle">Please wait while the AI fills in your daily journal entries.</p>
-
-    <div id="generating-section" class="generating-wrap">
-      <div class="gen-spinner"></div>
-      <div class="progress-label" id="progress-label">Initializing…</div>
-      <div class="progress-wrap">
-        <div class="progress-bar" id="progress-bar"></div>
+      <div class="pills">
+        <span class="pill" id="pill-days">0 days</span>
+        <span class="pill" id="pill-range" hidden></span>
+        <span class="pill" id="pill-pages" hidden></span>
       </div>
-      <div class="progress-text" id="progress-text">0%</div>
-      <p id="status-msg" style="color:var(--muted);font-size:0.87rem;margin-top:8px;"></p>
     </div>
 
-    <div id="error-3" class="banner error"></div>
+    <ol class="days" id="days-list"></ol>
 
-    <div class="done-wrap" id="done-wrap">
-      <div class="done-icon">🎉</div>
-      <div class="done-title">Journal Ready!</div>
-      <div class="done-sub">Your OJT daily journal PDF has been generated successfully.</div>
-      <button class="btn-download" onclick="handleDownload()">
-        ⬇️ Download PDF
-      </button>
+    <div id="error-2" class="banner" role="alert" style="margin-top: 20px;"></div>
+
+    <div class="action-bar">
+      <div>
+        <p style="font-weight: 600;" id="action-title">Ready to write your journal entries</p>
+        <p class="muted">Gemini writes reflections, tasks, learnings, tools and achievements for every day.</p>
+      </div>
+      <div class="btn-row">
+        <button type="button" class="btn btn-outline-ink" id="btn-back">Back to details</button>
+        <button type="button" class="btn btn-primary" id="btn-generate">
+          <span class="spinner" aria-hidden="true"></span>
+          <span id="btn-generate-text">Generate PDF</span>
+          <svg class="btn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Step 3: Generate & download ── -->
+  <section class="panel" id="panel-3">
+    <div id="generating-section">
+      <section class="card gen-card" aria-labelledby="gen-title">
+        <h1 class="display" id="gen-title">Writing your journal</h1>
+        <p>This usually takes under a minute. Keep this tab open.</p>
+
+        <div class="progress-head">
+          <span style="font-weight: 600;" id="progress-label">Starting…</span>
+          <span class="progress-pct" id="progress-text">0%</span>
+        </div>
+        <div class="progress" role="progressbar" aria-labelledby="progress-label" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="progress">
+          <div class="progress-bar" id="progress-bar"></div>
+        </div>
+        <p class="hint" id="status-msg" aria-live="polite"></p>
+
+        <ol class="stages">
+          <li class="stage active" id="stage-1">
+            <span class="stage-dot"><i></i><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span>
+            <span><span class="stage-title">Writing journal entries</span><span class="stage-sub" id="stage-1-sub">All days in one request to Gemini</span></span>
+          </li>
+          <li class="stage" id="stage-2">
+            <span class="stage-dot"><i></i><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span>
+            <span><span class="stage-title">Placing text on your template</span><span class="stage-sub">Daily pages, plus your details on page 3</span></span>
+          </li>
+          <li class="stage" id="stage-3">
+            <span class="stage-dot"><i></i><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span>
+            <span><span class="stage-title">PDF ready to download</span></span>
+          </li>
+        </ol>
+        <div id="error-3" class="banner" role="alert"></div>
+        <div id="error-3-actions" class="btn-row" style="margin-top: 16px;" hidden>
+          <button type="button" class="btn btn-outline" data-action="start-over">Start over</button>
+        </div>
+      </section>
     </div>
 
-    <div style="text-align:center;margin-top:28px;">
-      <button class="btn btn-ghost" onclick="startOver()" style="margin:0 auto;">↩ Start Over</button>
+    <div class="done-layout" id="done-wrap" hidden>
+      <section class="card done-card" aria-labelledby="done-title">
+        <div>
+          <h1 class="display" id="done-title">Your journal is <span class="hl">ready</span></h1>
+          <p id="done-sub">All days are filled in. Give it a quick read before you print or submit it.</p>
+        </div>
+        <div class="file-row">
+          <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M9 13h6M9 17h4"/></svg>
+          <span><span class="file-name" id="done-file">ojt_journal.pdf</span><span class="stage-sub" id="done-meta"></span></span>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="btn btn-primary btn-lg" id="btn-download">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+            Download PDF
+          </button>
+          <button type="button" class="btn btn-outline btn-lg" data-action="start-over">Start a new journal</button>
+        </div>
+        <div class="checklist">
+          <h2>Before you submit</h2>
+          <ul>
+            <li>Check your name and details on page 3.</li>
+            <li>Skim a few days for anything that didn't happen.</li>
+            <li>Signatures and stamps still need to be added by hand.</li>
+          </ul>
+        </div>
+      </section>
+
+      <aside class="ink-panel support" aria-labelledby="support-title">
+        <h2 class="display" id="support-title">Saved you a few evenings?</h2>
+        <p>OJT Journal Maker is free and open source. A chai or a star keeps it going.</p>
+        <a class="btn btn-mark" href="https://buymeachai.in/va16hav" target="_blank" rel="noopener">Buy me a chai</a>
+        <a class="btn btn-outline-ink" href="https://github.com/Va16hav07/OJT-maker" target="_blank" rel="noopener">Star it on GitHub</a>
+      </aside>
     </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container footer-row">
+    <span>Open source. <a href="https://github.com/Va16hav07/OJT-maker" target="_blank" rel="noopener">Contribute on GitHub</a></span>
+    <span>Saved you an evening? <a href="https://buymeachai.in/va16hav" target="_blank" rel="noopener">Buy me a chai</a></span>
   </div>
-
-    </div>
-  </div>
-
-</div><!-- /wizard -->
-
-<!-- ── Footer ── -->
-<footer style="
-  width: 100%;
-  padding: 24px 32px;
-  text-align: center;
-  border-top: 1px solid var(--border);
-  margin-top: 40px;
-  background: rgba(26, 29, 39, 0.5);
-">
-  <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 8px;">
-    ✨ <strong>OJT Journal Maker</strong> is open source
-  </p>
-  <p style="color: var(--muted); font-size: 0.82rem;">
-    💙 Contribute and improve: 
-    <a href="https://github.com/Va16hav07/OJT-maker.git" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: none; font-weight: 600;">
-      github
-    </a>
-  </p>
-  <p style="color: var(--muted); font-size: 0.82rem; margin-top: 8px;">
-    ☕ Support me on
-    <a href="https://buymeachai.in/va16hav" target="_blank" rel="noopener" style="color: var(--accent); text-decoration: none; font-weight: 600;">
-      Buy Me Chai
-    </a>
-  </p>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/flatpickr@4.6.13"></script>
 <script>
   // ── State ──
   let currentTaskId = null;
   let currentApiKey = null;
   let pollInterval = null;
+  let journalPages = null; // {start, end} of the last upload, for display
 
-  function toggleCustomPageRange(radio) {
-    const wrap = document.getElementById('custom_page_range_wrap');
-    if (radio.value === 'custom') {
-      wrap.style.display = 'block';
-    } else {
-      wrap.style.display = 'none';
-    }
+  const $ = (id) => document.getElementById(id);
+  function val(id) { return $(id).value.trim(); }
+
+  // ── Theme ──
+  const media = window.matchMedia('(prefers-color-scheme: dark)');
+  function isDark() {
+    const t = document.documentElement.dataset.theme;
+    return t ? t === 'dark' : media.matches;
   }
-
-  // ── Download Template ──
-  document.getElementById('downloadTemplateBtn').addEventListener('click', () => {
-    window.location.href = '/download-template';
+  function syncThemeLabel() {
+    $('theme-toggle').setAttribute('aria-label', isDark() ? 'Switch to light mode' : 'Switch to dark mode');
+  }
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let themeAnimTimer = null;
+  $('theme-toggle').addEventListener('click', () => {
+    const next = isDark() ? 'light' : 'dark';
+    const root = document.documentElement;
+    if (!reducedMotion.matches) {
+      root.classList.add('theme-anim');
+      clearTimeout(themeAnimTimer);
+      themeAnimTimer = setTimeout(() => root.classList.remove('theme-anim'), 320);
+    }
+    root.dataset.theme = next;
+    try { localStorage.setItem('ojt-theme', next); } catch (e) {}
+    syncThemeLabel();
   });
+  media.addEventListener('change', syncThemeLabel);
+  syncThemeLabel();
+
+  // ── Header edge line once content scrolls under it ──
+  const siteHeader = document.querySelector('.site-header');
+  const syncHeaderEdge = () => siteHeader.classList.toggle('scrolled', window.scrollY > 4);
+  window.addEventListener('scroll', syncHeaderEdge, { passive: true });
+  syncHeaderEdge();
 
   // ── Step management ──
+  let currentStep = 1;
   function goToStep(n) {
+    const back = n < currentStep;
+    currentStep = n;
     document.querySelectorAll('.panel').forEach((p, i) => {
       p.classList.toggle('active', i + 1 === n);
+      p.classList.toggle('back', back);
     });
-    document.querySelectorAll('.step-item').forEach((s, i) => {
-      s.classList.remove('active', 'done');
-      if (i + 1 < n)  s.classList.add('done');
-      if (i + 1 === n) s.classList.add('active');
+    document.querySelectorAll('.step').forEach((s, i) => {
+      s.classList.toggle('done', i + 1 < n);
+      s.classList.toggle('active', i + 1 === n);
+      if (i + 1 === n) s.setAttribute('aria-current', 'step'); else s.removeAttribute('aria-current');
     });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
-  // ── Drag-and-drop / click upload ──
-  const dz = document.getElementById('dropzone');
-  const pdfInput = document.getElementById('pdf-input');
-  const fileDisplay = document.getElementById('file-name-display');
-
-  dz.addEventListener('click', () => pdfInput.click());
-  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
-  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
-  dz.addEventListener('drop', e => {
-    e.preventDefault(); dz.classList.remove('drag-over');
-    const file = e.dataTransfer.files[0];
-    if (file && file.type === 'application/pdf') {
-      pdfInput.files = e.dataTransfer.files;
-      fileDisplay.textContent = '✓ ' + file.name;
-    } else {
-      showError('error-1', 'Please drop a valid PDF file.');
-    }
-  });
-  pdfInput.addEventListener('change', () => {
-    if (pdfInput.files[0]) {
-      const file = pdfInput.files[0];
-      const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
-      if (file.size > 50 * 1024 * 1024) {
-        showError('error-1', `File too large (${sizeMB}MB). Maximum is 50MB.`);
-        pdfInput.value = '';
-        fileDisplay.textContent = '';
-      } else {
-        fileDisplay.textContent = '✓ ' + file.name + ` (${sizeMB}MB)`;
-      }
-    }
-  });
-
-  // ── Helpers ──
+  // ── Errors & loading ──
   function showError(id, msg) {
-    const el = document.getElementById(id);
+    const el = $(id);
     el.textContent = msg;
     el.style.display = 'block';
     el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
-  function hideError(id) { document.getElementById(id).style.display = 'none'; }
+  function hideError(id) { $(id).style.display = 'none'; }
 
-  function setLoading(spinId, btnId, textId, loading, text) {
-    document.getElementById(spinId).style.display = loading ? 'block' : 'none';
-    document.getElementById(btnId).disabled = loading;
-    document.getElementById(textId).textContent = text;
+  // Point at the field itself: mark it invalid, move focus there, and say why in the summary panel.
+  function fieldError(id, msg) {
+    const el = $(id);
+    el.setAttribute('aria-invalid', 'true');
+    el.setAttribute('aria-describedby', 'error-1');
+    const banner = $('error-1');
+    banner.textContent = msg;
+    banner.style.display = 'block';
+    el.scrollIntoView({ behavior: reducedMotion.matches ? 'auto' : 'smooth', block: 'center' });
+    el.focus({ preventScroll: true });
+  }
+  function clearInvalid(el) {
+    if (el.getAttribute('aria-invalid') !== 'true') return;
+    el.removeAttribute('aria-invalid');
+    el.removeAttribute('aria-describedby');
+    hideError('error-1');
+  }
+  $('details-form').addEventListener('input', (e) => clearInvalid(e.target));
+  $('details-form').addEventListener('change', (e) => clearInvalid(e.target));
+
+  function setLoading(btnId, textId, loading, text) {
+    $(btnId).classList.toggle('loading', loading);
+    $(btnId).disabled = loading;
+    $(textId).textContent = text;
   }
 
-  function val(id) { return document.getElementById(id).value.trim(); }
+  // ── PDF picker / drag-and-drop ──
+  const dz = $('dropzone');
+  const pdfInput = $('pdf-input');
+  const fileDisplay = $('file-name-display');
+  const fileSub = $('file-sub');
+
+  function showFile(file) {
+    const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+    if (file.size > 50 * 1024 * 1024) {
+      showError('error-1', `File too large (${sizeMB} MB). Maximum is 50 MB.`);
+      clearFile();
+      return;
+    }
+    hideError('error-1');
+    dz.classList.remove('invalid');
+    dz.classList.add('has-file');
+    fileDisplay.textContent = file.name;
+    fileSub.textContent = `${sizeMB} MB · click to replace`;
+  }
+  function clearFile() {
+    pdfInput.value = '';
+    dz.classList.remove('has-file');
+    fileDisplay.textContent = 'Drop your PDF here, or browse';
+    fileSub.textContent = 'PDF up to 50 MB';
+  }
+
+  dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+  dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+  dz.addEventListener('drop', e => {
+    e.preventDefault();
+    dz.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type === 'application/pdf') {
+      pdfInput.files = e.dataTransfer.files;
+      showFile(file);
+    } else {
+      showError('error-1', 'Please drop a valid PDF file.');
+    }
+  });
+  pdfInput.addEventListener('change', () => { if (pdfInput.files[0]) showFile(pdfInput.files[0]); });
+
+  // ── Skip dates (flatpickr + chips) ──
+  const chipBox = $('skip-chips');
+  const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const fmtShort = (d) => `${d.getDate()} ${MONTHS[d.getMonth()]}`;
+  const fmtISO = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+
+  const fpSkipDates = flatpickr('#skip-dates', {
+    mode: 'multiple',
+    dateFormat: 'Y-m-d',
+    onChange: (dates, _str, fp) => {
+      renderChips(dates);
+      fp.input.value = '';
+      updateSummary();
+    },
+  });
+
+  function renderChips(dates) {
+    chipBox.replaceChildren();
+    [...dates].sort((a, b) => a - b).forEach(d => {
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.textContent = fmtShort(d);
+      const rm = document.createElement('button');
+      rm.type = 'button';
+      rm.setAttribute('aria-label', 'Remove ' + fmtShort(d));
+      rm.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
+      rm.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const keep = fpSkipDates.selectedDates.filter(x => x.getTime() !== d.getTime());
+        fpSkipDates.setDate(keep, true);
+      });
+      chip.appendChild(rm);
+      chipBox.appendChild(chip);
+    });
+  }
+  function skipDatesValue() { return fpSkipDates.selectedDates.map(fmtISO).join(','); }
+
+  // ── Page range ──
+  function journalRange() {
+    const custom = document.querySelector('input[name="journal_page_type"]:checked').value === 'custom';
+    if (custom) {
+      const m = val('journal_custom_range').match(/^(\d+)\s*(?:-\s*(\d+))?$/);
+      if (m) return { start: +m[1], end: m[2] ? +m[2] : null };
+    }
+    return { start: 8, end: null };
+  }
+  document.querySelectorAll('input[name="journal_page_type"]').forEach(r => r.addEventListener('change', () => {
+    $('custom-range-wrap').hidden = r.value !== 'custom' || !r.checked;
+    if (r.checked && r.value === 'custom') $('journal_custom_range').focus();
+    updateSummary();
+  }));
+
+  // ── Live summary ──
+  function parseInputDate(s) {
+    if (!s) return null;
+    const [y, m, d] = s.split('-').map(Number);
+    return new Date(y, m - 1, d);
+  }
+  function updateSummary() {
+    const start = parseInputDate(val('start-date'));
+    const end = parseInputDate(val('end-date'));
+    const range = journalRange();
+    if (!start || !end || end < start) {
+      $('sum-range').textContent = '–';
+      $('sum-days').textContent = '–';
+      $('sum-skipped').textContent = fpSkipDates.selectedDates.length;
+      $('sum-pages').textContent = '–';
+      $('sum-entries').textContent = '0';
+      $('sum-note').textContent = start && end ? 'The end date is before the start date.' : 'Pick your start and end dates to see how many pages you need.';
+      return;
+    }
+    const total = Math.round((end - start) / 86400000) + 1;
+    const skipped = fpSkipDates.selectedDates.filter(d => d >= start && d <= end).length;
+    const entries = total - skipped;
+    const lastPage = range.start + entries - 1;
+    $('sum-range').textContent = `${fmtShort(start)} – ${fmtShort(end)}`;
+    $('sum-days').textContent = total;
+    $('sum-skipped').textContent = skipped;
+    $('sum-pages').textContent = entries > 0 ? `${range.start} – ${lastPage}` : '–';
+    $('sum-entries').textContent = entries;
+    if (range.end !== null && lastPage > range.end) {
+      $('sum-note').textContent = `Only pages ${range.start}–${range.end} are set aside, so the last ${lastPage - range.end} day(s) will be left out.`;
+    } else {
+      $('sum-note').textContent = `Your template needs at least ${lastPage} pages.`;
+    }
+  }
+  ['start-date', 'end-date', 'journal_custom_range'].forEach(id => $(id).addEventListener('input', updateSummary));
+
+  // ── Word count ──
+  $('work-desc').addEventListener('input', () => {
+    const n = val('work-desc').split(/\s+/).filter(Boolean).length;
+    $('word-count').textContent = n + (n === 1 ? ' word' : ' words');
+  });
 
   // ── Step 1: Upload ──
+  $('details-form').addEventListener('submit', (e) => { e.preventDefault(); handleUpload(); });
+
   async function handleUpload() {
     hideError('error-1');
 
     const pdfFile = pdfInput.files[0];
-    if (!pdfFile)            return showError('error-1', 'Please select a PDF template file.');
-    if (!val('start-date'))  return showError('error-1', 'Please enter a start date.');
-    if (!val('end-date'))    return showError('error-1', 'Please enter an end date.');
-    if (!val('ojt-timing'))  return showError('error-1', 'Please enter OJT timing.');
-    if (!val('department'))  return showError('error-1', 'Please enter department.');
-    if (!val('designation')) return showError('error-1', 'Please enter designation.');
-    if (!val('work-desc'))   return showError('error-1', 'Please describe the work done.');
-    if (!val('api-key'))     return showError('error-1', 'Please enter your Gemini API key.');
+    if (!pdfFile) {
+      dz.classList.add('invalid');
+      return fieldError('pdf-input', 'Please select a PDF template file.');
+    }
+    const required = [
+      ['start-date', 'Please enter a start date.'],
+      ['end-date', 'Please enter an end date.'],
+      ['ojt-timing', 'Please enter OJT timing.'],
+      ['department', 'Please enter department.'],
+      ['designation', 'Please enter designation.'],
+      ['work-desc', 'Please describe the work you did.'],
+      ['api-key', 'Please enter your Gemini API key.'],
+    ];
+    for (const [id, msg] of required) {
+      if (!val(id)) return fieldError(id, msg);
+    }
+    if (val('end-date') < val('start-date')) return fieldError('end-date', 'The end date is before the start date.');
 
     const emailStr = val('email_id');
     if (emailStr && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailStr)) {
-      return showError('error-1', 'Please enter a valid Email Id (e.g. xyg@gmail.com).');
+      return fieldError('email_id', 'Please enter a valid email (e.g. you@college.edu).');
     }
 
-    setLoading('spinner-1', 'btn-upload', 'btn-upload-text', true, 'Processing…');
+    setLoading('btn-upload', 'btn-upload-text', true, 'Splitting your work…');
 
     currentApiKey = val('api-key');
     const fd = new FormData();
     fd.append('pdf_file', pdfFile);
     fd.append('start_date', val('start-date'));
     fd.append('end_date', val('end-date'));
-    fd.append('skip_dates', val('skip-dates'));
+    fd.append('skip_dates', skipDatesValue());
     fd.append('ojt_timing', val('ojt-timing'));
     fd.append('department', val('department'));
     fd.append('designation', val('designation'));
@@ -674,11 +946,8 @@
     fd.append('industry_partner_name', val('industry_partner_name'));
     fd.append('phone_no', val('phone_no'));
     fd.append('email_id', val('email_id'));
-
-    const journalPageType = document.querySelector('input[name="journal_page_type"]:checked').value;
-    fd.append('journal_page_type', journalPageType);
+    fd.append('journal_page_type', document.querySelector('input[name="journal_page_type"]:checked').value);
     fd.append('journal_custom_range', val('journal_custom_range'));
-
     fd.append('work_description', val('work-desc'));
     fd.append('api_key', currentApiKey);
 
@@ -688,52 +957,84 @@
       if (!res.ok) throw new Error(data.error || 'Upload failed');
 
       currentTaskId = data.task_id;
+      const range = journalRange();
+      journalPages = { start: range.start, end: range.start + data.daily_work.length - 1, total: data.pdf_pages };
       renderDayCards(data.daily_work);
-      document.getElementById('day-count-badge').textContent = data.total_days + ' day' + (data.total_days !== 1 ? 's' : '');
+      renderReviewSummary(data);
       goToStep(2);
     } catch (err) {
-      showError('error-1', '❌ ' + (err.message || 'An unexpected error occurred.'));
+      showError('error-1', err.message || 'An unexpected error occurred.');
     } finally {
-      setLoading('spinner-1', 'btn-upload', 'btn-upload-text', false, 'Upload & Process');
+      setLoading('btn-upload', 'btn-upload-text', false, 'Split my work into days');
     }
   }
 
+  // ── Step 2: Review ──
+  function plural(n, word) { return n + ' ' + word + (n === 1 ? '' : 's'); }
+
+  function renderReviewSummary(data) {
+    const n = data.daily_work.length;
+    $('pill-days').textContent = plural(n, 'day');
+    const days = data.working_days || [];
+    if (days.length) {
+      const first = parseInputDate(days[0]);
+      const last = parseInputDate(days[days.length - 1]);
+      $('pill-range').textContent = `${fmtShort(first)} – ${fmtShort(last)} ${last.getFullYear()}`;
+      $('pill-range').hidden = false;
+    }
+    $('pill-pages').textContent = `pages ${journalPages.start}–${journalPages.end}`;
+    $('pill-pages').hidden = false;
+    $('review-sub').textContent = `Gemini split your description into ${plural(n, 'day')}. Edit anything that reads wrong; the full journal entry for each day is written from this text.`;
+    $('action-title').textContent = `Ready to write ${n === 1 ? '1 journal entry' : n + ' journal entries'}`;
+  }
+
   function renderDayCards(dailyWork) {
-    const container = document.getElementById('days-list');
-    container.innerHTML = '';
+    const list = $('days-list');
+    list.replaceChildren();
     dailyWork.forEach((item, idx) => {
-      const card = document.createElement('div');
-      card.className = 'day-card';
-      card.dataset.idx = idx;
-      card.innerHTML = `
-        <div class="day-card-header">
-          <span class="day-num">Day ${item.day}</span>
-          <span class="day-date">📅 ${item.date}</span>
-        </div>
-        <textarea rows="3" data-field="work" placeholder="Describe the work for this day…">${escHtml(item.work)}</textarea>
-      `;
-      container.appendChild(card);
+      const li = document.createElement('li');
+      li.className = 'day';
+
+      const head = document.createElement('div');
+      head.className = 'day-head';
+      const label = document.createElement('label');
+      label.htmlFor = 'day-' + idx;
+      label.className = 'day-date';
+      label.textContent = item.date;
+      const meta = document.createElement('span');
+      meta.className = 'day-meta';
+      meta.textContent = `Day ${String(idx + 1).padStart(2, '0')} · p.${journalPages.start + idx}`;
+      head.append(label, meta);
+
+      const ta = document.createElement('textarea');
+      ta.className = 'textarea';
+      ta.id = 'day-' + idx;
+      ta.rows = 5;
+      ta.placeholder = 'Describe the work for this day…';
+      ta.value = item.work;
+
+      li.append(head, ta);
+      list.appendChild(li);
     });
   }
 
-  function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-
   function collectDailyWork() {
-    const cards = document.querySelectorAll('#days-list .day-card');
-    return Array.from(cards).map((card, idx) => ({
+    return Array.from(document.querySelectorAll('#days-list .day')).map((card, idx) => ({
       day: idx + 1,
-      date: card.querySelector('.day-date').textContent.replace('📅 ','').trim(),
+      date: card.querySelector('.day-date').textContent.trim(),
       work: card.querySelector('textarea').value.trim(),
     }));
   }
 
-  // ── Step 2: Generate ──
+  $('btn-back').addEventListener('click', () => goToStep(1));
+  $('btn-generate').addEventListener('click', handleGenerate);
+
   async function handleGenerate() {
     hideError('error-2');
     const dailyWork = collectDailyWork();
-    if (dailyWork.some(d => !d.work)) return showError('error-2', 'Please fill in all day descriptions.');
+    if (dailyWork.some(d => !d.work)) return showError('error-2', 'Please fill in every day before generating.');
 
-    setLoading('spinner-2', 'btn-generate', 'btn-generate-text', true, 'Starting…');
+    setLoading('btn-generate', 'btn-generate-text', true, 'Starting…');
 
     try {
       const res = await fetch('/generate', {
@@ -744,22 +1045,44 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Generate failed');
 
+      resetProgress();
+      $('stage-1-sub').textContent = `${plural(dailyWork.length, 'day')}, one request to Gemini`;
       goToStep(3);
-      document.getElementById('generating-section').style.display = 'block';
-      document.getElementById('done-wrap').style.display = 'none';
       startPolling();
     } catch (err) {
-      showError('error-2', '❌ ' + (err.message || 'An unexpected error occurred.'));
+      showError('error-2', err.message || 'An unexpected error occurred.');
     } finally {
-      setLoading('spinner-2', 'btn-generate', 'btn-generate-text', false, '✨ Generate PDF');
+      setLoading('btn-generate', 'btn-generate-text', false, 'Generate PDF');
     }
   }
 
-  // ── Step 3: Poll status ──
+  // ── Step 3: Progress ──
+  function setStage(n) {
+    [1, 2, 3].forEach(i => {
+      $('stage-' + i).classList.toggle('done', i < n);
+      $('stage-' + i).classList.toggle('active', i === n);
+    });
+  }
+  function setProgress(pct) {
+    $('progress-bar').style.width = pct + '%';
+    $('progress-text').textContent = pct + '%';
+    $('progress').setAttribute('aria-valuenow', pct);
+  }
+  function resetProgress() {
+    setProgress(0);
+    setStage(1);
+    $('progress-label').textContent = 'Starting…';
+    $('status-msg').textContent = '';
+    $('generating-section').hidden = false;
+    $('done-wrap').hidden = true;
+    $('error-3-actions').hidden = true;
+    hideError('error-3');
+  }
+
   function startPolling() {
     if (pollInterval) clearInterval(pollInterval);
     pollInterval = setInterval(pollStatus, 2000);
-    pollStatus(); // immediate first call
+    pollStatus();
   }
 
   async function pollStatus() {
@@ -769,76 +1092,81 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Status error');
 
-      const pct = data.progress || 0;
-      document.getElementById('progress-bar').style.width = pct + '%';
-      document.getElementById('progress-text').textContent = pct + '%';
-      document.getElementById('status-msg').textContent = data.message || '';
-
+      const msg = data.message || '';
       if (data.status === 'done') {
         clearInterval(pollInterval);
-        document.getElementById('generating-section').style.display = 'none';
-        document.getElementById('done-wrap').style.display = 'block';
+        setProgress(100);
+        setStage(4);
+        showDone(data);
       } else if (data.status === 'error') {
         clearInterval(pollInterval);
-        document.getElementById('generating-section').style.display = 'none';
-        showError('error-3', '❌ Generation failed:\n' + (data.message || 'Unknown error'));
+        $('progress-label').textContent = 'Something went wrong';
+        showError('error-3', 'Generation failed:\n' + (msg || 'Unknown error'));
+        $('error-3-actions').hidden = false;
+      } else if (/filling/i.test(msg)) {
+        setStage(2);
+        setProgress(data.progress || 0);
+        $('progress-label').textContent = 'Placing text on your template…';
       } else {
-        const label = data.total_pages
-          ? `Processing day ${data.current_page} of ${data.total_pages}…`
-          : 'Working…';
-        document.getElementById('progress-label').textContent = label;
+        setStage(1);
+        setProgress(data.progress || 0);
+        $('progress-label').textContent = data.current_page && data.total_pages
+          ? `Day ${data.current_page} of ${data.total_pages}`
+          : 'Writing journal entries…';
       }
+      $('status-msg').textContent = data.status === 'error' ? '' : msg;
     } catch (err) {
       // Non-critical poll error; keep retrying
     }
   }
 
+  function showDone(data) {
+    $('generating-section').hidden = true;
+    $('done-wrap').hidden = false;
+    $('done-file').textContent = `ojt_journal_${currentTaskId.slice(0, 8)}.pdf`;
+    $('done-meta').textContent = journalPages
+      ? `${plural(data.total_pages, 'journal day')} on pages ${journalPages.start}–${journalPages.end}`
+      : '';
+    $('done-sub').textContent = `All ${plural(data.total_pages, 'day')} are filled in. Give it a quick read before you print or submit it.`;
+  }
+
   // ── Download ──
-  function handleDownload() {
+  $('btn-download').addEventListener('click', () => {
     if (!currentTaskId) return;
     const link = document.createElement('a');
     link.href = '/download/' + currentTaskId;
     link.download = 'ojt_journal.pdf';
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
-  }
+    link.remove();
+  });
 
-  // ── Start Over ──
+  // ── Start over ──
+  document.querySelectorAll('[data-action="start-over"]').forEach(b => b.addEventListener('click', startOver));
+
   function startOver() {
     if (pollInterval) clearInterval(pollInterval);
     currentTaskId = null;
     currentApiKey = null;
-    pdfInput.value = '';
-    fileDisplay.textContent = '';
-    ['start-date','end-date','ojt-timing','department','designation','work-desc','api-key',
-     'name','registration_number','program_name','semester','location','industry_partner_name','phone_no','email_id', 'journal_custom_range']
-      .forEach(id => {
-          const el = document.getElementById(id);
-          if (el) el.value = '';
-      });
-    const allRadio = document.querySelector('input[name="journal_page_type"][value="all"]');
-    if (allRadio) {
-      allRadio.checked = true;
-      toggleCustomPageRange(allRadio);
-    }
-    if (window.fpSkipDates) window.fpSkipDates.clear();
-    document.getElementById('days-list').innerHTML = '';
-    document.getElementById('progress-bar').style.width = '0%';
-    document.getElementById('progress-text').textContent = '0%';
-    document.getElementById('status-msg').textContent = '';
-    document.getElementById('done-wrap').style.display = 'none';
-    document.getElementById('generating-section').style.display = 'block';
-    ['error-1','error-2','error-3'].forEach(hideError);
+    journalPages = null;
+    clearFile();
+    dz.classList.remove('invalid');
+    document.querySelectorAll('[aria-invalid]').forEach(clearInvalid);
+    ['start-date', 'end-date', 'ojt-timing', 'department', 'designation', 'work-desc', 'api-key',
+     'name', 'registration_number', 'program_name', 'semester', 'location', 'industry_partner_name',
+     'phone_no', 'email_id', 'journal_custom_range'].forEach(id => { $(id).value = ''; });
+    document.querySelector('input[name="journal_page_type"][value="all"]').checked = true;
+    $('custom-range-wrap').hidden = true;
+    fpSkipDates.clear();
+    $('word-count').textContent = '0 words';
+    $('days-list').replaceChildren();
+    resetProgress();
+    ['error-1', 'error-2'].forEach(hideError);
+    updateSummary();
     goToStep(1);
   }
-</script>
-<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-<script>
-  window.fpSkipDates = flatpickr("#skip-dates", {
-    mode: "multiple",
-    dateFormat: "Y-m-d"
-  });
+
+  updateSummary();
 </script>
 </body>
 </html>

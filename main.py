@@ -1,28 +1,34 @@
 import io
 import os
-import sys
 import uuid
 import threading
 import tempfile
 import traceback
 import time
 from datetime import datetime, timedelta
+from pathlib import Path
 
-from fastapi import FastAPI, UploadFile, File, Form, BackgroundTasks
+from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dateutil.parser import parse as parse_date
-import PyPDF2
+import pypdf
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from gemini_helper import split_work_into_days, generate_journal_entry, generate_all_journals
+from gemini_helper import split_work_into_days, generate_all_journals
 from pdf_filler import fill_pdf_with_overlay
 
 # Set temp directory for Vercel
 if 'VERCEL' in os.environ:
     tempfile.tempdir = '/tmp'
+
+# Resolve bundled files from this file's folder, so the app works no matter
+# which directory it is started from.
+BASE_DIR = Path(__file__).resolve().parent
+STATIC_DIR = BASE_DIR / "static"
+TEMPLATE_PDF = BASE_DIR / "ojt_template.pdf"
 
 app = FastAPI(title="OJT Journal Maker")
 
@@ -67,12 +73,8 @@ def cleanup_old_tasks():
         task_timestamps.pop(tid, None)
 
 
-# ---------------------------------------------------------------------------
-# Helper utilities
-# ---------------------------------------------------------------------------
-
 def get_working_days(start: datetime, end: datetime, skip: list) -> list:
-    """Return list of date strings (YYYY-MM-DD) for Mon-Sat between start and end, excluding skip."""
+    """Return list of date strings (YYYY-MM-DD) between start and end, excluding only explicitly skipped dates."""
     skip_set = set()
     for s in skip:
         s = s.strip()
@@ -86,15 +88,10 @@ def get_working_days(start: datetime, end: datetime, skip: list) -> list:
     current = start.date()
     end_date = end.date()
     while current <= end_date:
-        if current.weekday() < 6 and current not in skip_set:
+        if current not in skip_set:
             days.append(current.strftime("%Y-%m-%d"))
         current += timedelta(days=1)
     return days
-
-
-# ---------------------------------------------------------------------------
-# Background task
-# ---------------------------------------------------------------------------
 
 def generate_pdf_background(task_id: str, api_key: str):
     """Background thread: generate all journal entries and fill PDF."""
@@ -188,19 +185,11 @@ def generate_pdf_background(task_id: str, api_key: str):
         print(traceback.format_exc())
 
 
-# ---------------------------------------------------------------------------
-# Request models
-# ---------------------------------------------------------------------------
-
 class GenerateRequest(BaseModel):
     task_id: str
     api_key: str
     daily_work: list  # [{day, date, work}, ...]
 
-
-# ---------------------------------------------------------------------------
-# Endpoints
-# ---------------------------------------------------------------------------
 
 @app.post("/upload")
 async def upload(
@@ -245,9 +234,9 @@ async def upload(
         # Read PDF
         pdf_bytes = await pdf_file.read()
 
-        # Get page count using PyPDF2
+        # Get page count using pypdf
         try:
-            reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes))
+            reader = pypdf.PdfReader(io.BytesIO(pdf_bytes))
             page_count = len(reader.pages)
         except Exception as e:
             return JSONResponse(status_code=400, content={"error": "Invalid PDF file: " + str(e)})
@@ -382,16 +371,15 @@ async def download(task_id: str):
 
 @app.get("/")
 async def root():
-    return FileResponse("static/index.html")
+    return FileResponse(STATIC_DIR / "index.html")
 
 
 @app.get("/download-template")
 async def download_template():
     """Download the template PDF if it exists."""
-    template_path = "ojt_template.pdf"
-    if os.path.exists(template_path):
+    if TEMPLATE_PDF.exists():
         return FileResponse(
-            path=template_path,
+            path=TEMPLATE_PDF,
             media_type="application/pdf",
             filename="ojt_template.pdf",
         )
@@ -402,4 +390,4 @@ async def download_template():
         )
 
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")

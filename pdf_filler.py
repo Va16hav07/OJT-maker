@@ -4,7 +4,7 @@ import re
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import simpleSplit
-import PyPDF2
+import pypdf
 from gemini_helper import format_date
 
 A4_WIDTH, A4_HEIGHT = A4  # 595.27, 841.89 pts
@@ -30,20 +30,6 @@ FIELD_COORDS = {
     "phone_no":             {"x": 123, "y": 83, "max_width": 300, "font_size": 9},
     "email_id":             {"x": 298, "y": 83, "max_width": 300, "font_size": 9},
 }
-
-# Human-readable label patterns that map to field keys
-LABEL_PATTERNS = {
-    "date":                 ["date:"],
-    "ojt_timing":           ["ojt timing:", "timing:", "ojt time:"],
-    "department":           ["department:", "dept:"],
-    "designation":          ["designation:", "position:"],
-    "my_space":             ["my space:", "my space", "reflection:"],
-    "tasks_carried_out":    ["tasks carried out:", "tasks:", "activities:", "work done:"],
-    "key_learnings":        ["key learnings:", "learnings:", "observations:"],
-    "tools_used":           ["tools used:", "tools:", "equipment used:", "technologies:"],
-    "special_achievements": ["special achievements:", "achievements:", "milestones:"],
-}
-
 
 def clean_text_field(text: str) -> str:
     """
@@ -93,7 +79,6 @@ def parse_ojt_timing(timing_str: str) -> tuple:
         return "", ""
     
     # Split by common delimiters: –, -, or "to"
-    import re
     parts = re.split(r'[–\-]|\bto\b', timing_str, flags=re.IGNORECASE)
     
     if len(parts) >= 2:
@@ -102,31 +87,6 @@ def parse_ojt_timing(timing_str: str) -> tuple:
         return start, end
     
     return timing_str.strip(), ""
-
-
-def detect_pdf_fields(pdf_bytes: bytes) -> dict:
-    """Detect AcroForm fields in the PDF and return {field_name: page_index} mapping."""
-    fields = {}
-    try:
-        reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes))
-        if reader.trailer.get("/Root") and reader.trailer["/Root"].get("/AcroForm"):
-            acroform = reader.trailer["/Root"]["/AcroForm"]
-            if "/Fields" in acroform:
-                for field_ref in acroform["/Fields"]:
-                    field = field_ref.get_object()
-                    name = field.get("/T", "")
-                    fields[str(name)] = field
-    except Exception:
-        pass
-    return fields
-
-
-def detect_field_positions_from_text(pdf_bytes: bytes) -> dict:
-    """
-    Stub function - field detection not needed on Vercel.
-    Returns empty dict to use hardcoded coordinates.
-    """
-    return {}
 
 
 def _wrap_text(text: str, font_name: str, font_size: float, max_width: float) -> list:
@@ -141,8 +101,7 @@ def _wrap_text(text: str, font_name: str, font_size: float, max_width: float) ->
     return lines
 
 
-def _build_overlay_page(c_canvas, page_data: dict, page_width: float, page_height: float,
-                        detected_positions: dict, page_num: int):
+def _build_overlay_page(c_canvas, page_data: dict, page_width: float, page_height: float):
     """Draw all fields onto the reportlab canvas for one page."""
     scale_x = page_width / A4_WIDTH
     scale_y = page_height / A4_HEIGHT
@@ -181,21 +140,12 @@ def _build_overlay_page(c_canvas, page_data: dict, page_width: float, page_heigh
         if not text_value:
             continue
 
-        # Determine coordinates: prefer detected > hardcoded
-        if field_key in detected_positions and detected_positions[field_key]["page"] == page_num:
-            pos = detected_positions[field_key]
-            x = pos["x"] * scale_x
-            y = pos["y"] * scale_y
-            max_width = FIELD_COORDS[field_key]["max_width"] * scale_x
-            font_size = FIELD_COORDS[field_key]["font_size"]
-            max_lines = FIELD_COORDS[field_key].get("max_lines", 1)
-        else:
-            coords = FIELD_COORDS[field_key]
-            x = coords["x"] * scale_x
-            y = coords["y"] * scale_y
-            max_width = coords["max_width"] * scale_x
-            font_size = coords["font_size"]
-            max_lines = coords.get("max_lines", 1)
+        coords = FIELD_COORDS[field_key]
+        x = coords["x"] * scale_x
+        y = coords["y"] * scale_y
+        max_width = coords["max_width"] * scale_x
+        font_size = coords["font_size"]
+        max_lines = coords.get("max_lines", 1)
 
         c_canvas.setFont(font_name, font_size)
         c_canvas.setFillColorRGB(0, 0, 0)
@@ -216,10 +166,8 @@ def fill_pdf_with_overlay(pdf_bytes: bytes, pages_data: list, user_details=None,
     """
     Fill the PDF template with journal data.
 
-    Strategy:
-    1. Fall back to scanning text labels for field positions.
-    2. Fall back to hardcoded A4 coordinates.
-    Always uses reportlab overlay merged with PyPDF2.
+    Draws text at hardcoded A4 coordinates (scaled to each page's size) with a
+    reportlab overlay merged onto the template with pypdf.
 
     Args:
         pdf_bytes: Original PDF template bytes.
@@ -231,15 +179,8 @@ def fill_pdf_with_overlay(pdf_bytes: bytes, pages_data: list, user_details=None,
     Returns:
         Filled PDF as bytes.
     """
-    # --- Detect positions from text labels (best-effort) ---
-    detected_positions = {}
-    try:
-        detected_positions = detect_field_positions_from_text(pdf_bytes)
-    except Exception:
-        pass
-
-    # --- Get page count and sizes using PyPDF2 ---
-    original_reader = PyPDF2.PdfReader(io.BytesIO(pdf_bytes))
+    # --- Get page count and sizes using pypdf ---
+    original_reader = pypdf.PdfReader(io.BytesIO(pdf_bytes))
     num_template_pages = len(original_reader.pages)
     
     # Get page sizes - use A4 as default
@@ -288,31 +229,33 @@ def fill_pdf_with_overlay(pdf_bytes: bytes, pages_data: list, user_details=None,
             if journal_idx < len(pages_data):
                 page_data.update(pages_data[journal_idx])
 
-        _build_overlay_page(c, page_data, pw, ph, detected_positions, page_idx)
+        _build_overlay_page(c, page_data, pw, ph)
         c.showPage()
 
     c.save()
     overlay_buffer.seek(0)
 
-    # --- Merge overlay with original PDF using PyPDF2 ---
-    overlay_reader = PyPDF2.PdfReader(overlay_buffer)
-    writer = PyPDF2.PdfWriter()
+    # --- Merge overlay with original PDF using pypdf ---
+    overlay_reader = pypdf.PdfReader(overlay_buffer)
+    writer = pypdf.PdfWriter()
 
     for page_idx in range(num_output_pages):
         # Get original page (repeat last if template is shorter than data)
         if page_idx < len(original_reader.pages):
             orig_page = original_reader.pages[page_idx]
         elif original_reader.pages:
-            # Clone last page
-            orig_page = original_reader.pages[-1]
+            # Re-read the template so each repeat is an independent copy of the
+            # last page; reusing one page object would make every repeat share
+            # a single merged overlay.
+            orig_page = pypdf.PdfReader(io.BytesIO(pdf_bytes)).pages[-1]
         else:
             orig_page = None
 
         overlay_page = overlay_reader.pages[page_idx]
 
         if orig_page is not None:
-            orig_page.merge_page(overlay_page)
-            writer.add_page(orig_page)
+            # Merge after adding: pypdf deprecates merging into pages not owned by a writer
+            writer.add_page(orig_page).merge_page(overlay_page)
         else:
             writer.add_page(overlay_page)
 

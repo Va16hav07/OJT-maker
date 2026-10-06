@@ -1,13 +1,15 @@
-import google.generativeai as genai
 import json
+import os
 import re
 import time
 from datetime import datetime
 
+from google import genai
+from google.genai import errors, types
 
-# ─────────────────────────────────────────────
-# ✅ DATE FORMATTER
-# ─────────────────────────────────────────────
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
+
+
 def get_ordinal_suffix(day: int) -> str:
     if 11 <= (day % 100) <= 13:
         return 'th'
@@ -28,39 +30,32 @@ def format_date(date_str: str) -> str:
         return date_str
 
 
-# ─────────────────────────────────────────────
-# ✅ SAFE GEMINI CALL (handles 429)
-# ─────────────────────────────────────────────
-def call_gemini(model, prompt, retries=3):
+def call_gemini(api_key, prompt, retries=3):
+    client = genai.Client(api_key=api_key)
     for i in range(retries):
         try:
-            response = model.generate_content(
-                prompt,
-                generation_config={
-                    "temperature": 0.4,
-                    "top_p": 0.9,
-                }
+            response = client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    temperature=0.4,
+                    top_p=0.9,
+                    response_mime_type="application/json",
+                ),
             )
             text = response.text.strip()
             text = re.sub(r'^```(?:json)?\s*', '', text)
             text = re.sub(r'\s*```$', '', text)
             return text
 
-        except Exception as e:
-            if "429" in str(e):
+        except errors.APIError as e:
+            if e.code == 429:
                 time.sleep(40)
             else:
                 raise e
     raise Exception("Gemini failed after retries")
 
-
-# ─────────────────────────────────────────────
-# ✅ SPLIT WORK INTO DAYS (IMPROVED PROMPT)
-# ─────────────────────────────────────────────
 def split_work_into_days(api_key: str, work_description: str, dates: list, num_days: int) -> list:
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-2.5-flash-lite')
-
     prompt = f"""
 You are a professional OJT training supervisor.
 
@@ -87,7 +82,7 @@ WORK:
 {work_description}
 """
 
-    text = call_gemini(model, prompt)
+    text = call_gemini(api_key, prompt)
 
     daily_splits = json.loads(text)
 
@@ -102,14 +97,7 @@ WORK:
 
     return result
 
-
-# ─────────────────────────────────────────────
-# ✅ GENERATE ALL JOURNAL ENTRIES IN ONE CALL 🚀
-# ─────────────────────────────────────────────
 def generate_all_journals(api_key: str, daily_data: list) -> list:
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-2.5-flash-lite')
-
     combined_input = "\n".join([
         f"Day {d['day']} ({d['date']}): {d['work']}"
         for d in daily_data
@@ -149,72 +137,7 @@ INPUT:
 {combined_input}
 """
 
-    text = call_gemini(model, prompt)
+    text = call_gemini(api_key, prompt)
 
     return json.loads(text)
 
-
-# ─────────────────────────────────────────────
-# ✅ FINAL PIPELINE FUNCTION
-# ─────────────────────────────────────────────
-def generate_full_entries(api_key: str, work_description: str, dates: list):
-    num_days = len(dates)
-
-    # Step 1: Split
-    daily_split = split_work_into_days(api_key, work_description, dates, num_days)
-
-    # Step 2: Generate ALL entries (1 API call)
-    journal_data = generate_all_journals(api_key, daily_split)
-
-    # Merge
-    final = []
-    for i in range(num_days):
-        entry = journal_data[i]
-        base = daily_split[i]
-
-        final.append({
-            "date_display": base["date"],
-            "my_space": entry["my_space"],
-            "tasks_carried_out": entry["tasks_carried_out"],
-            "key_learnings": entry["key_learnings"],
-            "tools_used": entry["tools_used"],
-            "special_achievements": entry["special_achievements"],
-        })
-
-    return final
-
-
-# ─────────────────────────────────────────────
-# ✅ SINGLE JOURNAL ENTRY (for backward compatibility)
-# ─────────────────────────────────────────────
-def generate_journal_entry(api_key: str, date: str, work: str) -> dict:
-    """Generate structured journal entry for one day using Gemini."""
-    genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-2.5-flash-lite')
-    
-    # Format date to DD-M-YYYY
-    formatted_date = format_date(date)
-
-    prompt = f"""Generate a professional internship daily journal entry for a college student.
-
-Date: {formatted_date}
-Work Done: {work}
-
-Return ONLY a valid JSON object (no markdown, no explanation):
-{{
-  "my_space": "Detailed personal reflection (Minimum 4 sentences/lines)",
-  "tasks_carried_out": "Task 1\\nTask 2\\nTask 3\\nTask 4",
-  "key_learnings": "Learning 1\\nLearning 2\\nLearning 3",
-  "tools_used": "tool1, tool2, tool3",
-  "special_achievements": "Achievement description (1-2 sentences)"
-}}
-
-IMPORTANT:
-- Use college/student-level tools only (Python, JavaScript, Git, VS Code, Linux, React, etc.)
-- AVOID professional tools like Jira, Azure, Salesforce, enterprise software
-- Use plain newlines (\\n) between items for multi-line fields, NOT JSON arrays
-- Each task/learning should be a complete sentence
-- Keep it concise, professional, realistic, and non-repetitive"""
-
-    text = call_gemini(model, prompt)
-    return json.loads(text)

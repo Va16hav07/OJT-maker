@@ -1,24 +1,14 @@
 {
-  "version": 2,
-  "builds": [
-    {
-      "src": "api/main.py",
-      "use": "@vercel/python"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "api/main.py"
-    }
-  ],
-  "env": {
-    "PYTHONUNBUFFERED": "1"
-  },
   "functions": {
     "api/main.py": {
       "maxDuration": 60,
       "memory": 3008
     }
-  }
+  },
+  "rewrites": [
+    {
+      "source": "/(.*)",
+      "destination": "/api/main"
+    }
+  ]
 }
