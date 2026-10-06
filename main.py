@@ -17,7 +17,7 @@ from dateutil.parser import parse as parse_date
 import pypdf
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from gemini_helper import split_work_into_days, generate_all_journals
+from gemini_helper import GeminiError, split_work_into_days, generate_all_journals
 from pdf_filler import fill_pdf_with_overlay
 
 # Set temp directory for Vercel
@@ -112,35 +112,26 @@ def generate_pdf_background(task_id: str, api_key: str):
         journal_end_page = task.get("journal_end_page")
         total = len(daily_work)
 
-        # STEP 1: Generate ALL entries in ONE API call
-        task["message"] = "Generating all journal entries..."
-        print(f"[Task {task_id}] Generating all entries in one call...")
+        # STEP 1: Write the entries (Gemini, in batches). A failure stops the task with
+        # a readable reason rather than filling the journal with placeholder text.
+        task["message"] = "Writing journal entries..."
+        print(f"[Task {task_id}] Writing {total} entries...")
 
-        try:
-            all_entries = generate_all_journals(api_key, daily_work)
-            print(f"[Task {task_id}] All entries generated successfully")
-        except Exception as exc:
-            print(f"[Task {task_id}] ERROR (batch): {exc}")
-            print(traceback.format_exc())
+        def on_progress(done, _total):
+            task["current_page"] = done
+            task["progress"] = int(done / total * 90)
+            task["message"] = f"Written {done} of {total} days..."
 
-            # fallback: create basic entries
-            all_entries = []
-            for day_item in daily_work:
-                all_entries.append({
-                    "my_space": "Worked on assigned tasks for the day.",
-                    "tasks_carried_out": day_item["work"],
-                    "key_learnings": "Gained practical experience.",
-                    "tools_used": "Various tools",
-                    "special_achievements": "N/A",
-                })
+        def on_retry(seconds):
+            task["message"] = f"Gemini is busy, retrying in {seconds} s..."
+
+        all_entries = generate_all_journals(api_key, daily_work, on_progress=on_progress, on_retry=on_retry)
+        print(f"[Task {task_id}] All entries written")
 
         # STEP 2: Build pages_data locally (NO API CALLS HERE)
         pages_data = []
 
         for i, day_item in enumerate(daily_work):
-            task["current_page"] = i + 1
-            task["message"] = f"Processing page {i + 1} of {total}..."
-
             entry = all_entries[i]
 
             pages_data.append({
@@ -154,8 +145,6 @@ def generate_pdf_background(task_id: str, api_key: str):
                 "tools_used": entry.get("tools_used", ""),
                 "special_achievements": entry.get("special_achievements", ""),
             })
-
-            task["progress"] = int(((i + 1) / total) * 100)
 
         task["message"] = "Filling PDF template..."
         print(f"[Task {task_id}] {task['message']}")
@@ -306,6 +295,8 @@ async def upload(
             "daily_work": daily_work,
         }
 
+    except GeminiError as e:
+        return JSONResponse(status_code=502, content={"error": str(e)})
     except ValueError as e:
         return JSONResponse(status_code=400, content={"error": str(e)})
     except Exception:

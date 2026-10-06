@@ -605,7 +605,7 @@
         <ol class="stages">
           <li class="stage active" id="stage-1">
             <span class="stage-dot"><i></i><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span>
-            <span><span class="stage-title">Writing journal entries</span><span class="stage-sub" id="stage-1-sub">All days in one request to Gemini</span></span>
+            <span><span class="stage-title">Writing journal entries</span><span class="stage-sub" id="stage-1-sub">Written a week at a time</span></span>
           </li>
           <li class="stage" id="stage-2">
             <span class="stage-dot"><i></i><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span>
@@ -618,6 +618,7 @@
         </ol>
         <div id="error-3" class="banner" role="alert"></div>
         <div id="error-3-actions" class="btn-row" style="margin-top: 16px;" hidden>
+          <button type="button" class="btn btn-primary" id="btn-retry">Back to review and try again</button>
           <button type="button" class="btn btn-outline" data-action="start-over">Start over</button>
         </div>
       </section>
@@ -1027,6 +1028,7 @@
   }
 
   $('btn-back').addEventListener('click', () => goToStep(1));
+  $('btn-retry').addEventListener('click', () => { if (pollInterval) clearInterval(pollInterval); stopCreep(); goToStep(2); });
   $('btn-generate').addEventListener('click', handleGenerate);
 
   async function handleGenerate() {
@@ -1046,7 +1048,7 @@
       if (!res.ok) throw new Error(data.error || 'Generate failed');
 
       resetProgress();
-      $('stage-1-sub').textContent = `${plural(dailyWork.length, 'day')}, one request to Gemini`;
+      $('stage-1-sub').textContent = `${plural(dailyWork.length, 'day')}, written a week at a time`;
       goToStep(3);
       startPolling();
     } catch (err) {
@@ -1068,7 +1070,37 @@
     $('progress-text').textContent = pct + '%';
     $('progress').setAttribute('aria-valuenow', pct);
   }
+
+  // The server only reports progress when a batch of days finishes, which can take a while.
+  // Between reports the bar creeps toward a ceiling it never reaches on its own, so it is always
+  // visibly moving; real progress from the server jumps it forward. It never moves backwards.
+  let shownPct = 0, serverPct = 0, creepCeiling = 88, creepTimer = null, startedAt = 0, serverMsg = '';
+  function setServerProgress(pct, ceiling) {
+    serverPct = Math.max(serverPct, pct);
+    creepCeiling = ceiling;
+    renderProgress();
+  }
+  function renderProgress() {
+    shownPct = Math.max(shownPct, serverPct);
+    setProgress(Math.floor(shownPct));
+    const secs = Math.round((Date.now() - startedAt) / 1000);
+    $('status-msg').textContent = serverMsg ? `${serverMsg} · ${secs} s` : `${secs} s`;
+  }
+  function startCreep() {
+    stopCreep();
+    shownPct = 0; serverPct = 0; creepCeiling = 88; serverMsg = ''; startedAt = Date.now();
+    creepTimer = setInterval(() => {
+      if (shownPct < creepCeiling) shownPct += (creepCeiling - shownPct) * 0.012;
+      renderProgress();
+    }, 200);
+  }
+  function stopCreep() {
+    if (creepTimer) clearInterval(creepTimer);
+    creepTimer = null;
+  }
+
   function resetProgress() {
+    stopCreep();
     setProgress(0);
     setStage(1);
     $('progress-label').textContent = 'Starting…';
@@ -1081,7 +1113,8 @@
 
   function startPolling() {
     if (pollInterval) clearInterval(pollInterval);
-    pollInterval = setInterval(pollStatus, 2000);
+    startCreep();
+    pollInterval = setInterval(pollStatus, 1000);
     pollStatus();
   }
 
@@ -1093,28 +1126,31 @@
       if (!res.ok) throw new Error(data.error || 'Status error');
 
       const msg = data.message || '';
+      serverMsg = msg.replace(/\.+$/, '');
       if (data.status === 'done') {
         clearInterval(pollInterval);
+        stopCreep();
         setProgress(100);
         setStage(4);
         showDone(data);
       } else if (data.status === 'error') {
         clearInterval(pollInterval);
+        stopCreep();
+        $('status-msg').textContent = '';
         $('progress-label').textContent = 'Something went wrong';
         showError('error-3', 'Generation failed:\n' + (msg || 'Unknown error'));
         $('error-3-actions').hidden = false;
       } else if (/filling/i.test(msg)) {
         setStage(2);
-        setProgress(data.progress || 0);
+        setServerProgress(Math.max(data.progress || 0, 90), 98);
         $('progress-label').textContent = 'Placing text on your template…';
       } else {
         setStage(1);
-        setProgress(data.progress || 0);
+        setServerProgress(data.progress || 0, 88);
         $('progress-label').textContent = data.current_page && data.total_pages
-          ? `Day ${data.current_page} of ${data.total_pages}`
+          ? `Written ${data.current_page} of ${data.total_pages} days`
           : 'Writing journal entries…';
       }
-      $('status-msg').textContent = data.status === 'error' ? '' : msg;
     } catch (err) {
       // Non-critical poll error; keep retrying
     }
