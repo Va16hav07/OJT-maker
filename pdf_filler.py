@@ -5,7 +5,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.utils import simpleSplit
 import pypdf
-from gemini_helper import format_date
+from ai_helper import format_date
 
 A4_WIDTH, A4_HEIGHT = A4  # 595.27, 841.89 pts
 

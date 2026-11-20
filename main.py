@@ -17,7 +17,7 @@ from dateutil.parser import parse as parse_date
 import pypdf
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from gemini_helper import GeminiError, split_work_into_days, generate_all_journals
+from ai_helper import LLM, AIError, make_llm, split_work_into_days, generate_all_journals
 from pdf_filler import fill_pdf_with_overlay
 
 # Set temp directory for Vercel
@@ -93,7 +93,7 @@ def get_working_days(start: datetime, end: datetime, skip: list) -> list:
         current += timedelta(days=1)
     return days
 
-def generate_pdf_background(task_id: str, api_key: str):
+def generate_pdf_background(task_id: str, llm: LLM):
     """Background thread: generate all journal entries and fill PDF."""
     task = tasks.get(task_id)
     if not task:
@@ -112,7 +112,7 @@ def generate_pdf_background(task_id: str, api_key: str):
         journal_end_page = task.get("journal_end_page")
         total = len(daily_work)
 
-        # STEP 1: Write the entries (Gemini, in batches). A failure stops the task with
+        # STEP 1: Write the entries (Gemini or OpenRouter, in batches). A failure stops the task with
         # a readable reason rather than filling the journal with placeholder text.
         task["message"] = "Writing journal entries..."
         print(f"[Task {task_id}] Writing {total} entries...")
@@ -123,9 +123,9 @@ def generate_pdf_background(task_id: str, api_key: str):
             task["message"] = f"Written {done} of {total} days..."
 
         def on_retry(seconds):
-            task["message"] = f"Gemini is busy, retrying in {seconds} s..."
+            task["message"] = f"{llm.label} is busy, retrying in {seconds} s..."
 
-        all_entries = generate_all_journals(api_key, daily_work, on_progress=on_progress, on_retry=on_retry)
+        all_entries = generate_all_journals(llm, daily_work, on_progress=on_progress, on_retry=on_retry)
         print(f"[Task {task_id}] All entries written")
 
         # STEP 2: Build pages_data locally (NO API CALLS HERE)
@@ -178,6 +178,8 @@ class GenerateRequest(BaseModel):
     task_id: str
     api_key: str
     daily_work: list  # [{day, date, work}, ...]
+    provider: str = "gemini"
+    model: str = ""
 
 
 @app.post("/upload")
@@ -201,11 +203,15 @@ async def upload(
     journal_custom_range: str = Form(default=""),
     work_description: str = Form(...),
     api_key: str = Form(...),
+    provider: str = Form(default="gemini"),
+    model: str = Form(default=""),
 ):
     # Opportunistically clean up old tasks on each upload
     cleanup_old_tasks()
 
     try:
+        llm = make_llm(provider, api_key, model)
+
         # Parse dates
         start_dt = parse_date(start_date)
         end_dt = parse_date(end_date)
@@ -255,8 +261,8 @@ async def upload(
             except ValueError:
                 pass
 
-        # Split work into days via Gemini
-        daily_work = split_work_into_days(api_key, work_description, working_days, num_days)
+        # Split work into days via the chosen AI provider
+        daily_work = split_work_into_days(llm, work_description, working_days, num_days)
 
         task_id = str(uuid.uuid4())
         tasks[task_id] = {
@@ -295,7 +301,7 @@ async def upload(
             "daily_work": daily_work,
         }
 
-    except GeminiError as e:
+    except AIError as e:
         return JSONResponse(status_code=502, content={"error": str(e)})
     except ValueError as e:
         return JSONResponse(status_code=400, content={"error": str(e)})
@@ -308,6 +314,10 @@ async def generate(req: GenerateRequest):
     task = tasks.get(req.task_id)
     if not task:
         return JSONResponse(status_code=404, content={"error": "Task not found"})
+    try:
+        llm = make_llm(req.provider, req.api_key, req.model)
+    except ValueError as e:
+        return JSONResponse(status_code=400, content={"error": str(e)})
 
     # Update daily_work with user edits
     task["daily_work"] = req.daily_work
@@ -318,7 +328,7 @@ async def generate(req: GenerateRequest):
 
     thread = threading.Thread(
         target=generate_pdf_background,
-        args=(req.task_id, req.api_key),
+        args=(req.task_id, llm),
         daemon=True,
     )
     thread.start()

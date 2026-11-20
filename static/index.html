@@ -179,6 +179,20 @@
       :root:not([data-theme="light"]) .theme-toggle .icon-sun { display: block; }
       :root:not([data-theme="light"]) .theme-toggle .icon-moon { display: none; }
     }
+    /* Share band */
+    .share-band {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px 32px;
+      padding-top: 36px; padding-bottom: 32px; border-bottom: 1px solid var(--border);
+    }
+    .share-copy { flex: 1 1 420px; max-width: 620px; }
+    .share-kicker { margin: 0 0 6px; font-size: 13px; color: var(--accent); }
+    .share-title { margin: 0; font-size: clamp(22px, 3vw, 30px); line-height: 1.15; color: var(--text); }
+    .share-sub { margin: 10px 0 0; color: var(--muted); }
+    .share-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+    .btn-whatsapp { background: #25D366; color: #0B2E1A; }
+    .btn-whatsapp:hover { background: #1EBE5A; color: #0B2E1A; }
+    #share-copy.copied { border-color: #25D366; }
+    @media (max-width: 560px) { .share-actions .btn { flex: 1 1 100%; } }
     .footer-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; padding-top: 20px; padding-bottom: 20px; font-size: 14px; color: var(--muted); }
 
     main { padding-top: 36px; padding-bottom: 56px; }
@@ -284,6 +298,7 @@
     .choice-title { display: block; font-weight: 600; }
     .choice-sub { display: block; color: var(--muted); font-size: 14px; }
     #custom-range-wrap { margin-top: 16px; max-width: 320px; }
+    .key-field { margin-top: 16px; }
     .hint { margin: 6px 0 0; font-size: 13px; color: var(--muted); }
 
     .textarea-meta { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; margin-top: 8px; font-size: 13px; color: var(--muted); }
@@ -438,7 +453,7 @@
   <!-- ── Step 1: Details ── -->
   <section class="panel active" id="panel-1" aria-labelledby="title-1">
     <h1 class="page-title display" id="title-1">Turn one description of your OJT into a <span class="hl">filled daily journal</span>.</h1>
-    <p class="lede">Upload your journal template, describe what you worked on, and Gemini writes one entry per day straight onto the PDF pages.</p>
+    <p class="lede">Upload your journal template, describe what you worked on, and an AI model (Gemini or any OpenRouter model) writes one entry per day straight onto the PDF pages.</p>
 
     <form class="layout" id="details-form" novalidate>
       <div class="layout-main">
@@ -522,11 +537,30 @@
         </section>
 
         <section class="card" aria-labelledby="s-key">
-          <h2 class="display" id="s-key"><label for="api-key">Gemini API key</label></h2>
-          <p class="card-desc">Free from Google AI Studio. Sent with this request only and never saved.</p>
-          <div class="key-row">
-            <input class="input" type="password" id="api-key" placeholder="AIza…" autocomplete="off" spellcheck="false" />
-            <a class="icon-link" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">Get a free key<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+          <h2 class="display" id="s-key">AI provider</h2>
+          <p class="card-desc">Which service writes your journal. Your key is sent with this request only and never saved.</p>
+          <fieldset class="choices">
+            <legend class="sr-only">AI provider</legend>
+            <label class="choice">
+              <input type="radio" name="ai_provider" value="gemini" checked />
+              <span><span class="choice-title">Google Gemini</span><span class="choice-sub">Free key from AI Studio</span></span>
+            </label>
+            <label class="choice">
+              <input type="radio" name="ai_provider" value="openrouter" />
+              <span><span class="choice-title">OpenRouter</span><span class="choice-sub">One key, many models</span></span>
+            </label>
+          </fieldset>
+          <div class="field key-field">
+            <label for="api-key" id="api-key-label">Gemini API key</label>
+            <div class="key-row">
+              <input class="input" type="password" id="api-key" placeholder="AIza…" autocomplete="off" spellcheck="false" />
+              <a class="icon-link" id="api-key-link" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener"><span id="api-key-link-text">Get a free key</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
+            </div>
+          </div>
+          <div class="field key-field">
+            <label for="ai-model">Model <span class="label-note">(optional)</span></label>
+            <input class="input mono" type="text" id="ai-model" placeholder="gemini-3.5-flash-lite" autocomplete="off" spellcheck="false" aria-describedby="ai-model-hint" />
+            <p class="hint" id="ai-model-hint">Leave blank for the default.</p>
           </div>
         </section>
       </div>
@@ -573,7 +607,7 @@
     <div class="action-bar">
       <div>
         <p style="font-weight: 600;" id="action-title">Ready to write your journal entries</p>
-        <p class="muted">Gemini writes reflections, tasks, learnings, tools and achievements for every day.</p>
+        <p class="muted">The AI writes reflections, tasks, learnings, tools and achievements for every day.</p>
       </div>
       <div class="btn-row">
         <button type="button" class="btn btn-outline-ink" id="btn-back">Back to details</button>
@@ -662,8 +696,29 @@
 </main>
 
 <footer class="site-footer">
+  <section class="container share-band" aria-labelledby="share-title">
+    <div class="share-copy">
+      <p class="share-kicker mono">// pass it on</p>
+      <h2 class="display share-title" id="share-title">Your batchmates are still typing <span class="hl">60 journal pages</span> by hand.</h2>
+      <p class="share-sub">Send them the shortcut. One share could save someone's whole weekend.</p>
+    </div>
+    <div class="share-actions">
+      <a class="btn btn-whatsapp" id="share-whatsapp" href="https://wa.me/" target="_blank" rel="noopener">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.1l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.7 11.8 11.8 0 0 0 4.5 4c1.7.7 2.3.8 3.2.6a2.7 2.7 0 0 0 1.8-1.3c.2-.4.2-.9.1-1l-.5-.2Z"/></svg>
+        Share on WhatsApp
+      </a>
+      <button type="button" class="btn btn-outline" id="share-copy">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg>
+        <span id="share-copy-text">Copy link</span>
+      </button>
+      <a class="btn btn-outline" href="https://github.com/Va16hav07/OJT-maker" target="_blank" rel="noopener">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1L12 2Z"/></svg>
+        Star on GitHub
+      </a>
+    </div>
+  </section>
   <div class="container footer-row">
-    <span>Open source. <a href="https://github.com/Va16hav07/OJT-maker" target="_blank" rel="noopener">Contribute on GitHub</a></span>
+    <span>Made by students, for students. Free and <a href="https://github.com/Va16hav07/OJT-maker" target="_blank" rel="noopener">open source</a>.</span>
     <span>Saved you an evening? <a href="https://buymeachai.in/va16hav" target="_blank" rel="noopener">Buy me a chai</a></span>
   </div>
 </footer>
@@ -673,11 +728,38 @@
   // ── State ──
   let currentTaskId = null;
   let currentApiKey = null;
+  let currentProvider = 'gemini';
+  let currentModel = '';
   let pollInterval = null;
   let journalPages = null; // {start, end} of the last upload, for display
 
   const $ = (id) => document.getElementById(id);
   function val(id) { return $(id).value.trim(); }
+
+  // ── Share footer ──
+  (function () {
+    const url = location.origin + '/';
+    const text = 'Finished my whole OJT journal in minutes 🤯 AI writes every day\'s entry and fills the PDF for you. Free: ' + url;
+    $('share-whatsapp').href = 'https://wa.me/?text=' + encodeURIComponent(text);
+    const copyBtn = $('share-copy'), copyText = $('share-copy-text');
+    let resetTimer = null;
+    copyBtn.addEventListener('click', async () => {
+      // On phones, open the native share sheet; elsewhere copy the link.
+      if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+        try { await navigator.share({ title: 'OJT Journal Maker', text, url }); } catch (_) {}
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(url);
+        copyText.textContent = 'Link copied!';
+      } catch (_) {
+        copyText.textContent = url;
+      }
+      copyBtn.classList.add('copied');
+      clearTimeout(resetTimer);
+      resetTimer = setTimeout(() => { copyText.textContent = 'Copy link'; copyBtn.classList.remove('copied'); }, 2000);
+    });
+  })();
 
   // ── Theme ──
   const media = window.matchMedia('(prefers-color-scheme: dark)');
@@ -850,6 +932,31 @@
     }
     return { start: 8, end: null };
   }
+  // ── AI provider ──
+  const PROVIDER_INFO = {
+    gemini: {
+      name: 'Gemini', keyLabel: 'Gemini API key', placeholder: 'AIza…', model: 'gemini-3.5-flash-lite',
+      link: 'https://aistudio.google.com/app/apikey', linkText: 'Get a free key',
+      hint: 'Leave blank for the default.',
+    },
+    openrouter: {
+      name: 'OpenRouter', keyLabel: 'OpenRouter API key', placeholder: 'sk-or-…', model: 'google/gemini-3.5-flash-lite',
+      link: 'https://openrouter.ai/keys', linkText: 'Get a key',
+      hint: 'Any OpenRouter model ID that supports structured outputs. Leave blank for the default.',
+    },
+  };
+  function currentProviderValue() { return document.querySelector('input[name="ai_provider"]:checked').value; }
+  function applyProvider() {
+    const info = PROVIDER_INFO[currentProviderValue()];
+    $('api-key-label').textContent = info.keyLabel;
+    $('api-key').placeholder = info.placeholder;
+    $('api-key-link').href = info.link;
+    $('api-key-link-text').textContent = info.linkText;
+    $('ai-model').placeholder = info.model;
+    $('ai-model-hint').textContent = info.hint;
+  }
+  document.querySelectorAll('input[name="ai_provider"]').forEach(r => r.addEventListener('change', applyProvider));
+
   document.querySelectorAll('input[name="journal_page_type"]').forEach(r => r.addEventListener('change', () => {
     $('custom-range-wrap').hidden = r.value !== 'custom' || !r.checked;
     if (r.checked && r.value === 'custom') $('journal_custom_range').focus();
@@ -916,7 +1023,7 @@
       ['department', 'Please enter department.'],
       ['designation', 'Please enter designation.'],
       ['work-desc', 'Please describe the work you did.'],
-      ['api-key', 'Please enter your Gemini API key.'],
+      ['api-key', `Please enter your ${PROVIDER_INFO[currentProviderValue()].name} API key.`],
     ];
     for (const [id, msg] of required) {
       if (!val(id)) return fieldError(id, msg);
@@ -931,6 +1038,8 @@
     setLoading('btn-upload', 'btn-upload-text', true, 'Splitting your work…');
 
     currentApiKey = val('api-key');
+    currentProvider = currentProviderValue();
+    currentModel = val('ai-model');
     const fd = new FormData();
     fd.append('pdf_file', pdfFile);
     fd.append('start_date', val('start-date'));
@@ -951,6 +1060,8 @@
     fd.append('journal_custom_range', val('journal_custom_range'));
     fd.append('work_description', val('work-desc'));
     fd.append('api_key', currentApiKey);
+    fd.append('provider', currentProvider);
+    fd.append('model', currentModel);
 
     try {
       const res = await fetch('/upload', { method: 'POST', body: fd });
@@ -985,7 +1096,7 @@
     }
     $('pill-pages').textContent = `pages ${journalPages.start}–${journalPages.end}`;
     $('pill-pages').hidden = false;
-    $('review-sub').textContent = `Gemini split your description into ${plural(n, 'day')}. Edit anything that reads wrong; the full journal entry for each day is written from this text.`;
+    $('review-sub').textContent = `${PROVIDER_INFO[currentProvider].name} split your description into ${plural(n, 'day')}. Edit anything that reads wrong; the full journal entry for each day is written from this text.`;
     $('action-title').textContent = `Ready to write ${n === 1 ? '1 journal entry' : n + ' journal entries'}`;
   }
 
@@ -1042,7 +1153,7 @@
       const res = await fetch('/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ task_id: currentTaskId, api_key: currentApiKey, daily_work: dailyWork }),
+        body: JSON.stringify({ task_id: currentTaskId, api_key: currentApiKey, provider: currentProvider, model: currentModel, daily_work: dailyWork }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Generate failed');
@@ -1184,14 +1295,18 @@
     if (pollInterval) clearInterval(pollInterval);
     currentTaskId = null;
     currentApiKey = null;
+    currentProvider = 'gemini';
+    currentModel = '';
     journalPages = null;
     clearFile();
     dz.classList.remove('invalid');
     document.querySelectorAll('[aria-invalid]').forEach(clearInvalid);
-    ['start-date', 'end-date', 'ojt-timing', 'department', 'designation', 'work-desc', 'api-key',
+    ['start-date', 'end-date', 'ojt-timing', 'department', 'designation', 'work-desc', 'api-key', 'ai-model',
      'name', 'registration_number', 'program_name', 'semester', 'location', 'industry_partner_name',
      'phone_no', 'email_id', 'journal_custom_range'].forEach(id => { $(id).value = ''; });
     document.querySelector('input[name="journal_page_type"][value="all"]').checked = true;
+    document.querySelector('input[name="ai_provider"][value="gemini"]').checked = true;
+    applyProvider();
     $('custom-range-wrap').hidden = true;
     fpSkipDates.clear();
     $('word-count').textContent = '0 words';
