@@ -16,7 +16,9 @@ from google.genai import errors, types
 from pydantic import BaseModel
 
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
-OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "google/gemini-3.5-flash-lite")
+# "openrouter/free" routes each request to a currently free model that supports structured outputs,
+# so the default keeps working as individual free models come and go.
+OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "openrouter/free")
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 OPENROUTER_TIMEOUT = 120  # seconds per request
 

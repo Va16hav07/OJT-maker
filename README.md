@@ -52,7 +52,7 @@ Open **http://localhost:8000** in your browser.
 You need a key from **one** of these:
 
 - **Google Gemini** (free): [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey)
-- **OpenRouter**: [openrouter.ai/keys](https://openrouter.ai/keys)
+- **OpenRouter** (free models available): [openrouter.ai/keys](https://openrouter.ai/keys)
 
 **Paste your key in the app, under "AI provider".** Don't put it in a `.env` file or environment variable, because the app doesn't read keys from there. Your key is only used for that request and is never saved.
 
@@ -62,7 +62,7 @@ You need a key from **one** of these:
 
 1. **Upload** your journal PDF template. If you don't have one, use the **Default template PDF** link on the page.
 2. **Fill in** your dates, the days to skip, OJT timing, department, designation and a description of your work.
-3. **Choose an AI provider** and paste your API key. Leave the model field blank to use the default.
+3. **Choose an AI provider** and paste your API key. Leave the model field blank to use the default. For OpenRouter, the default is a free model.
 4. Click **Split my work into days**, then check and edit each day.
 5. Click **Generate PDF**, wait for it to finish, and **download** your journal.
 
