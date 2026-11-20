@@ -547,7 +547,7 @@
             </label>
             <label class="choice">
               <input type="radio" name="ai_provider" value="openrouter" />
-              <span><span class="choice-title">OpenRouter</span><span class="choice-sub">One key, many models</span></span>
+              <span><span class="choice-title">OpenRouter</span><span class="choice-sub">Free models, no card needed</span></span>
             </label>
           </fieldset>
           <div class="field key-field">
@@ -940,9 +940,9 @@
       hint: 'Leave blank for the default.',
     },
     openrouter: {
-      name: 'OpenRouter', keyLabel: 'OpenRouter API key', placeholder: 'sk-or-…', model: 'google/gemini-3.5-flash-lite',
-      link: 'https://openrouter.ai/keys', linkText: 'Get a key',
-      hint: 'Any OpenRouter model ID that supports structured outputs. Leave blank for the default.',
+      name: 'OpenRouter', keyLabel: 'OpenRouter API key', placeholder: 'sk-or-…', model: 'openrouter/free',
+      link: 'https://openrouter.ai/keys', linkText: 'Get a free key',
+      hint: 'Blank uses openrouter/free, which picks a free model for you. For better quality, enter a paid model such as google/gemini-3.5-flash-lite.',
     },
   };
   function currentProviderValue() { return document.querySelector('input[name="ai_provider"]:checked').value; }
