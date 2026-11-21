@@ -336,6 +336,9 @@
     .btn.loading .btn-icon { display: none; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
+    .wait-note { margin: 0 0 20px; padding: 14px 16px; border-radius: 10px; background: var(--accent-soft); border: 1px solid var(--border); border-left: 4px solid var(--highlight); font-size: 14px; color: var(--text-2); }
+    .wait-note p { margin: 0 0 8px; }
+    .wait-note p:last-child { margin-bottom: 0; }
     .banner { display: none; padding: 12px 16px; border-radius: 10px; font-size: 14px; white-space: pre-wrap; background: var(--error-bg); color: var(--error-text); border: 1px solid var(--error-line); }
 
     /* Step 2 */
@@ -560,7 +563,7 @@
           </div>
           <div class="field key-field">
             <label for="ai-model">Model <span class="label-note">(optional)</span></label>
-            <input class="input mono" type="text" id="ai-model" placeholder="gemini-3.5-flash-lite" autocomplete="off" spellcheck="false" aria-describedby="ai-model-hint" />
+            <input class="input mono" type="text" id="ai-model" placeholder="gemini-3.5-flash" autocomplete="off" spellcheck="false" aria-describedby="ai-model-hint" />
             <p class="hint" id="ai-model-hint">Leave blank for the default.</p>
           </div>
         </section>
@@ -626,7 +629,11 @@
     <div id="generating-section">
       <section class="card gen-card" aria-labelledby="gen-title">
         <h1 class="display" id="gen-title">Writing your journal</h1>
-        <p>This usually takes under a minute. Keep this tab open.</p>
+        <div class="wait-note" role="note">
+          <p><strong>This usually takes around 5 minutes. Please wait and keep this tab open.</strong></p>
+          <p>Don't trust the progress bar, the UI is a bit broken (might fix it later, or someone else might, I'm lazy tho 😅). If it looks stuck, <strong>it is NOT stuck.</strong> Open Inspect → Network and you'll see requests still going, which means it's working.</p>
+          <p lang="hi-Latn"><strong>Isme usually 5 min lagte hain, please wait karo aur tab band mat karna.</strong> Progress bar pe bharosa mat karo, UI thoda kharab hai (baad mein fix karunga, ya koi aur kar dega, main lazy hoon 😅). Agar atka hua lage toh <strong>atka NAHI hai.</strong> Inspect → Network khol ke dekho, requests chal rahi hongi, matlab kaam ho raha hai.</p>
+        </div>
 
         <div class="progress-head">
           <span style="font-weight: 600;" id="progress-label">Starting…</span>
@@ -936,9 +943,9 @@
   // ── AI provider ──
   const PROVIDER_INFO = {
     gemini: {
-      name: 'Gemini', keyLabel: 'Gemini API key', placeholder: 'AIza…', model: 'gemini-3.5-flash-lite',
+      name: 'Gemini', keyLabel: 'Gemini API key', placeholder: 'AIza…', model: 'gemini-3.5-flash',
       link: 'https://aistudio.google.com/app/apikey', linkText: 'Get a free key',
-      hint: 'Leave blank for the default.',
+      hint: 'Leave blank for the default. If Gemini says it is overloaded, try another model such as gemini-3.5-flash-lite.',
     },
     openrouter: {
       name: 'OpenRouter', keyLabel: 'OpenRouter API key', placeholder: 'sk-or-…', model: 'openrouter/free',

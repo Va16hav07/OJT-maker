@@ -16,7 +16,9 @@ from google import genai
 from google.genai import errors, types
 from pydantic import BaseModel
 
-GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash-lite")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash")
+# Suggested in the "overloaded" error, so the user has another model to switch to.
+GEMINI_ALT_MODEL = "gemini-3.5-flash-lite"
 # "openrouter/free" routes each request to a currently free model that supports structured outputs,
 # so the default keeps working as individual free models come and go.
 OPENROUTER_MODEL = os.environ.get("OPENROUTER_MODEL", "openrouter/free")
@@ -144,6 +146,12 @@ def _friendly_error(llm: LLM, e: _APIFailure, key_index: int = 0) -> AIError:
     if e.code == 404 or (e.code == 400 and "model" in msg.lower() and "valid" in msg.lower()):
         return AIError(f"The {name} model '{llm.model}' is not available. Pick a current model.")
     if e.code == 408 or (e.code or 0) >= 500:
+        if llm.provider == "gemini":
+            other = GEMINI_ALT_MODEL if llm.model != GEMINI_ALT_MODEL else GEMINI_MODEL
+            return AIError(
+                f"Gemini model '{llm.model}' is overloaded right now. Change the model "
+                f"(for example to '{other}') in the Model field, or try again in a minute."
+            )
         return AIError(f"{name} is overloaded right now. Please try again in a minute.")
     return AIError(f"{name} request failed: {msg}")
 
