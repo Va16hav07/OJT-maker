@@ -553,9 +553,10 @@
           <div class="field key-field">
             <label for="api-key" id="api-key-label">Gemini API key</label>
             <div class="key-row">
-              <input class="input" type="password" id="api-key" placeholder="AIza…" autocomplete="off" spellcheck="false" />
+              <input class="input" type="password" id="api-key" placeholder="AIza…" autocomplete="off" spellcheck="false" aria-describedby="api-key-hint" />
               <a class="icon-link" id="api-key-link" href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener"><span id="api-key-link-text">Get a free key</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 17 17 7M8 7h9v9"/></svg></a>
             </div>
+            <p class="hint" id="api-key-hint">Hitting rate limits? Paste two or more keys separated by commas; requests are shared between them.</p>
           </div>
           <div class="field key-field">
             <label for="ai-model">Model <span class="label-note">(optional)</span></label>

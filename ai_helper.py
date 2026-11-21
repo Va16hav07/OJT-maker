@@ -2,12 +2,13 @@
 
 Both providers get the same prompts and the same validation; only the transport differs.
 """
+import itertools
 import json
 import os
 import re
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 import httpx
@@ -30,7 +31,8 @@ PROVIDERS = {
 # Days written per request. Small batches keep each reply well under the
 # output limit; one request for a whole month got cut off and produced no entries.
 BATCH_SIZE = 7
-MAX_PARALLEL_REQUESTS = 4
+MAX_PARALLEL_REQUESTS = 4  # per API key
+MAX_PARALLEL_TOTAL = 12
 MAX_ATTEMPTS = 3
 RETRY_DELAYS = [5, 15, 30]  # seconds to wait after a rate-limit / overload error
 MAX_OUTPUT_TOKENS = 16384
@@ -45,24 +47,37 @@ class AIError(Exception):
 
 @dataclass(frozen=True)
 class LLM:
-    """Which provider, key and model to write with."""
+    """Which provider, keys and model to write with.
+
+    With several keys, requests are spread across them in turn, so their rate limits add up.
+    """
     provider: str
-    api_key: str
+    api_keys: tuple
     model: str
+    _turn: itertools.count = field(default_factory=itertools.count, compare=False, repr=False)
 
     @property
     def label(self) -> str:
         return PROVIDERS[self.provider]["label"]
+
+    def next_key(self) -> int:
+        """Index of the key the next request should use (round-robin, thread-safe under the GIL)."""
+        return next(self._turn) % len(self.api_keys)
+
+
+def parse_api_keys(api_key: str) -> tuple:
+    """Split the key field on commas, semicolons or whitespace; drop blanks and duplicates."""
+    return tuple(dict.fromkeys(k for k in re.split(r"[\s,;]+", api_key or "") if k))
 
 
 def make_llm(provider: str, api_key: str, model: str = "") -> LLM:
     provider = (provider or "gemini").strip().lower()
     if provider not in PROVIDERS:
         raise ValueError(f"Unknown AI provider '{provider}'. Choose one of: {', '.join(PROVIDERS)}.")
-    api_key = (api_key or "").strip()
-    if not api_key:
+    keys = parse_api_keys(api_key)
+    if not keys:
         raise ValueError(f"Please enter your {PROVIDERS[provider]['label']} API key.")
-    return LLM(provider, api_key, (model or "").strip() or PROVIDERS[provider]["default_model"])
+    return LLM(provider, keys, (model or "").strip() or PROVIDERS[provider]["default_model"])
 
 
 class DayWork(BaseModel):
@@ -114,15 +129,18 @@ class _APIFailure(Exception):
         return self.code in (408, 429) or (self.code is not None and self.code >= 500)
 
 
-def _friendly_error(llm: LLM, e: _APIFailure) -> AIError:
+def _friendly_error(llm: LLM, e: _APIFailure, key_index: int = 0) -> AIError:
     name, msg = llm.label, e.message
     if e.code in (401, 403) or "API key" in msg or "API_KEY" in msg:
         where = "Google AI Studio" if llm.provider == "gemini" else "your OpenRouter account"
-        return AIError(f"{name} rejected the API key. Check that it is correct and enabled in {where}.")
+        which = f"API key #{key_index + 1}" if len(llm.api_keys) > 1 else "the API key"
+        return AIError(f"{name} rejected {which}. Check that it is correct and enabled in {where}.")
     if e.code == 402:
         return AIError(f"Your {name} account is out of credits. Add credits, or pick a free model (one ending in ':free').")
     if e.code == 429:
-        return AIError(f"{name}'s rate limit or daily quota was reached. Wait a minute and try again, or use a different API key.")
+        if len(llm.api_keys) > 1:
+            return AIError(f"{name}'s rate limit or daily quota was reached on all {len(llm.api_keys)} keys. Wait a minute and try again, or add another key.")
+        return AIError(f"{name}'s rate limit or daily quota was reached. Wait a minute and try again, or add a second key (separate keys with a comma).")
     if e.code == 404 or (e.code == 400 and "model" in msg.lower() and "valid" in msg.lower()):
         return AIError(f"The {name} model '{llm.model}' is not available. Pick a current model.")
     if e.code == 408 or (e.code or 0) >= 500:
@@ -144,8 +162,8 @@ def _parse_json_reply(text: str) -> list:
     return [item for item in data if isinstance(item, dict)] if isinstance(data, list) else []
 
 
-def _gemini_request(llm: LLM, prompt: str, item_model) -> list:
-    client = genai.Client(api_key=llm.api_key)
+def _gemini_request(llm: LLM, api_key: str, prompt: str, item_model) -> list:
+    client = genai.Client(api_key=api_key)
     try:
         response = client.models.generate_content(
             model=llm.model,
@@ -179,7 +197,7 @@ def _openrouter_schema(item_model) -> dict:
     }
 
 
-def _openrouter_request(llm: LLM, prompt: str, item_model) -> list:
+def _openrouter_request(llm: LLM, api_key: str, prompt: str, item_model) -> list:
     payload = {
         "model": llm.model,
         "messages": [{
@@ -194,7 +212,7 @@ def _openrouter_request(llm: LLM, prompt: str, item_model) -> list:
             "json_schema": {"name": item_model.__name__.lower(), "strict": True, "schema": _openrouter_schema(item_model)},
         },
     }
-    headers = {"Authorization": f"Bearer {llm.api_key}", "X-Title": "OJT Journal Maker"}
+    headers = {"Authorization": f"Bearer {api_key}", "X-Title": "OJT Journal Maker"}
     try:
         res = httpx.post(OPENROUTER_URL, json=payload, headers=headers, timeout=OPENROUTER_TIMEOUT)
     except httpx.TimeoutException as e:
@@ -223,18 +241,30 @@ _BACKENDS = {"gemini": _gemini_request, "openrouter": _openrouter_request}
 
 
 def call_model(llm: LLM, prompt: str, item_model, on_retry=None) -> list:
-    """Send one request and return the parsed JSON (list of dicts). Retries rate limits and overloads."""
-    for attempt in range(len(RETRY_DELAYS) + 1):
+    """Send one request and return the parsed JSON (list of dicts).
+
+    On a rate limit or overload the request moves straight on to the next key; only when every
+    key has failed in a row does it wait (RETRY_DELAYS) and go round again.
+    """
+    waits = 0
+    failed_in_row = 0
+    while True:
+        key_index = llm.next_key()
         try:
-            return _BACKENDS[llm.provider](llm, prompt, item_model)
+            return _BACKENDS[llm.provider](llm, llm.api_keys[key_index], prompt, item_model)
         except _APIFailure as e:
-            if e.retryable and attempt < len(RETRY_DELAYS):
-                if on_retry:
-                    on_retry(RETRY_DELAYS[attempt])
-                time.sleep(RETRY_DELAYS[attempt])
-                continue
-            raise _friendly_error(llm, e) from e
-    return []
+            if not e.retryable:
+                raise _friendly_error(llm, e, key_index) from e
+            failed_in_row += 1
+            if failed_in_row < len(llm.api_keys):
+                continue  # another key may still have quota
+            if waits >= len(RETRY_DELAYS):
+                raise _friendly_error(llm, e, key_index) from e
+            if on_retry:
+                on_retry(RETRY_DELAYS[waits])
+            time.sleep(RETRY_DELAYS[waits])
+            waits += 1
+            failed_in_row = 0
 
 
 def split_work_into_days(llm: LLM, work_description: str, dates: list, num_days: int) -> list:
@@ -395,7 +425,8 @@ def generate_all_journals(llm: LLM, daily_data: list, on_progress=None, on_retry
     batches = [day_numbers[i:i + BATCH_SIZE] for i in range(0, len(day_numbers), BATCH_SIZE)]
 
     results = {}
-    with ThreadPoolExecutor(max_workers=MAX_PARALLEL_REQUESTS) as pool:
+    workers = min(MAX_PARALLEL_REQUESTS * len(llm.api_keys), MAX_PARALLEL_TOTAL)
+    with ThreadPoolExecutor(max_workers=workers) as pool:
         futures = [pool.submit(_generate_batch, llm, timeline, batch, on_retry) for batch in batches]
         for future in as_completed(futures):
             results.update(future.result())
