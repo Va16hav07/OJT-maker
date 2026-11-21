@@ -56,6 +56,8 @@ You need a key from **one** of these:
 
 **Paste your key in the app, under "AI provider".** Don't put it in a `.env` file or environment variable, because the app doesn't read keys from there. Your key is only used for that request and is never saved.
 
+**Rate limits?** Paste several keys in the same field, separated by commas (e.g. `AIza...one, AIza...two`). Requests are shared between the keys, and when one hits its limit the app switches to the next, so you get the combined quota of all of them. Keys from different Google accounts/projects work best; keys from the same project share one quota.
+
 ---
 
 ## 🚀 How to Use
